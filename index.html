@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+    <link rel="manifest" href="/manifest.json">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -336,7 +338,7 @@
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 1.3.2 (Otimização do Scanner)</p>
+        <p>Versão 1.3.2 (PWA Ready + Otimização do Scanner)</p>
     </footer>
 
 </div> 
@@ -659,7 +661,7 @@ function showPage(page, event) {
                     qrbox: 200, 
                     disableFlip: false,
                     facingMode: "environment",
-                    // >>>>> NOVO AJUSTE: Otimização de Resolução para Mobile <<<<<
+                    // >>>>> AJUSTE CRUCIAL: Otimização de Resolução para Mobile <<<<<
                     videoConstraints: {
                         facingMode: { ideal: "environment" }, 
                         width: { max: 480 },
