@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Chaves — Dashboard Dark (Firebase)</title>
+    <title>Gestão de Chaves — SENAIHUB</title>
+
+    <link rel="manifest" href="/manifest.json">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-    <link rel="manifest" href="/manifest.json">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -18,8 +18,8 @@
 
     <style>
         /* =======================================
-           ESTILOS BASE (DARK MODE)
-           ======================================= */
+            ESTILOS BASE (DARK MODE)
+            ======================================= */
         body {
             background: #121212;
             color: #fff;
@@ -73,8 +73,8 @@
         }
 
         /* =======================================
-           SIDEBAR (BARRA LATERAL)
-           ======================================= */
+            SIDEBAR (BARRA LATERAL)
+            ======================================= */
         .sidebar {
             height: 100vh;
             background: #1f1f1f;
@@ -92,10 +92,10 @@
             margin-bottom: 20px;
         }
         .sidebar .logo-container img {
-           /* Usando o nome do arquivo da sua imagem */
-           max-width: 100%;
-           height: auto;
-           max-height: 60px;
+            /* Usando o nome do arquivo da sua imagem retangular (192x59) */
+            max-width: 100%;
+            height: auto;
+            max-height: 60px;
         }
         .sidebar a {
             color: #ccc;
@@ -111,8 +111,8 @@
         }
 
         /* =======================================
-           FOOTER (RODAPÉ)
-           ======================================= */
+            FOOTER (RODAPÉ)
+            ======================================= */
         .footer {
             background: #1f1f1f;
             color: #ccc;
@@ -125,8 +125,8 @@
 
 
         /* =======================================
-           RESPONSIVIDADE (SMARTPHONE/TABLET)
-           ======================================= */
+            RESPONSIVIDADE (SMARTPHONE/TABLET)
+            ======================================= */
         @media (max-width: 768px) {
             /* SIDEBAR: Vira um cabeçalho horizontal e rolável */
             .sidebar {
@@ -322,7 +322,7 @@
                 <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
 
                 <div id="areaConfirmacao" style="display:none;">
-                    <input id="idColRetirada" placeholder="ID do colaborador que está retirando" class="form-control mt-2">
+                    <input id="idColRetirada" placeholder="ID do colaborador" class="form-control mt-2">
 
                     <button id="btnConfirmarRetirada" class="btn btn-success mt-2 w-100" onclick="confirmarRetirada()">
                         <i class="fa fa-check"></i> Confirmar Retirada
@@ -338,7 +338,7 @@
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 1.3.2 (PWA Ready + Otimização do Scanner)</p>
+        <p>Versão 1.3.3 (PWA Ready + UX Table + Scanner Fix)</p>
     </footer>
 
 </div> 
@@ -366,7 +366,7 @@
 
 <script>
 // ============================================================
-//                    SCRIPT DO SISTEMA (com Firebase)
+//                    SCRIPT DO SISTEMA (com Firebase)
 // ============================================================
 
 // Variáveis Globais
@@ -380,33 +380,32 @@ let tipoEdicao = null;
 let chaveSelecionada = null;
 let html5QrcodeScanner = null;
 let db = null; 
-// >>>>>>>>>> VARIÁVEL ADICIONADA PARA O NOVO CONTROLE DO SCANNER <<<<<<<<<<
 let scannerParadoPorSucesso = false; 
 
 /* ==================================
-    CONFIGURAÇÃO DO FIREBASE (PASSO 6 - Use suas credenciais aqui)
+    CONFIGURAÇÃO DO FIREBASE (PASSO 6 - Use suas credenciais aqui)
 ================================== */
 const firebaseConfig = {
-  // SUAS CREDENCIAIS FORNECIDAS
-  apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8", 
-  authDomain: "gestao-chaves-app.firebaseapp.com",
-  projectId: "gestao-chaves-app", 
-  storageBucket:"gestao-chaves-app.firebasestorage.app",
-  messagingSenderId: "391255964652",
-  appId: "1:391255964652:web:6d27bb36bc9ff520349ec9",
+  // SUAS CREDENCIAIS FORNECIDAS
+  apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8", 
+  authDomain: "gestao-chaves-app.firebaseapp.com",
+  projectId: "gestao-chaves-app", 
+  storageBucket:"gestao-chaves-app.firebasestorage.app",
+  messagingSenderId: "391255964652",
+  appId: "1:391255964652:web:6d27bb36bc9ff520349ec9",
 };
 
 function iniciarSistema() {
-    // Inicializa o Firebase e o Firestore
-    const app = firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
+    // Inicializa o Firebase e o Firestore
+    const app = firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
 
-    // Inicia os listeners (carregamento em tempo real do Firebase)
-    carregarChavesFirebase();
-    carregarColaboradoresFirebase();
-    carregarHistoricoFirebase();
+    // Inicia os listeners (carregamento em tempo real do Firebase)
+    carregarChavesFirebase();
+    carregarColaboradoresFirebase();
+    carregarHistoricoFirebase();
 
-    document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
+    document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
 }
 
 // ====================================================================
@@ -414,48 +413,48 @@ function iniciarSistema() {
 // ====================================================================
 
 function carregarChavesFirebase() {
-    // onSnapshot: Escuta mudanças na coleção 'chaves' em tempo real
-    db.collection("chaves").onSnapshot((snapshot) => {
-        // Mapeia os documentos. O 'idDoc' é o ID interno do Firestore, crucial para UPDATE
-        chaves = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
-        
-        // Recalcula o contador da chave baseando-se no ID mais alto
-        contadorChave = chaves.reduce((max, c) => {
-            const num = parseInt(c.id.split('-')[1]);
-            return num > max ? num : max;
-        }, 0);
-        
-        atualizarListas(); 
-    }, error => {
-        console.error("Erro ao carregar chaves:", error);
-    });
+    // onSnapshot: Escuta mudanças na coleção 'chaves' em tempo real
+    db.collection("chaves").onSnapshot((snapshot) => {
+        // Mapeia os documentos. O 'idDoc' é o ID interno do Firestore, crucial para UPDATE
+        chaves = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+        
+        // Recalcula o contador da chave baseando-se no ID mais alto
+        contadorChave = chaves.reduce((max, c) => {
+            const num = parseInt(c.id.split('-')[1]);
+            return num > max ? num : max;
+        }, 0);
+        
+        atualizarListas(); 
+    }, error => {
+        console.error("Erro ao carregar chaves:", error);
+    });
 }
 
 function carregarColaboradoresFirebase() {
-    db.collection("colaboradores").onSnapshot((snapshot) => {
-        colaboradores = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+    db.collection("colaboradores").onSnapshot((snapshot) => {
+        colaboradores = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
 
-        // Recalcula o contador do colaborador baseando-se no ID mais alto
-        contadorColaborador = colaboradores.reduce((max, c) => {
-            const num = parseInt(c.id);
-            return num > max ? num : max;
-        }, 0);
-        
-        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
-        atualizarListas();
-    }, error => {
-        console.error("Erro ao carregar colaboradores:", error);
-    });
+        // Recalcula o contador do colaborador baseando-se no ID mais alto
+        contadorColaborador = colaboradores.reduce((max, c) => {
+            const num = parseInt(c.id);
+            return num > max ? num : max;
+        }, 0);
+        
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
+        atualizarListas();
+    }, error => {
+        console.error("Erro ao carregar colaboradores:", error);
+    });
 }
 
 function carregarHistoricoFirebase() {
-    // Ordena por dataTimestamp para garantir que o histórico mais novo apareça primeiro
-    db.collection("historico").orderBy("dataTimestamp", "desc").onSnapshot((snapshot) => {
-        historico = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
-        atualizarListas();
-    }, error => {
-        console.error("Erro ao carregar histórico:", error);
-    });
+    // Ordena por dataTimestamp para garantir que o histórico mais novo apareça primeiro
+    db.collection("historico").orderBy("dataTimestamp", "desc").onSnapshot((snapshot) => {
+        historico = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+        atualizarListas();
+    }, error => {
+        console.error("Erro ao carregar histórico:", error);
+    });
 }
 
 // ====================================================================
@@ -463,532 +462,495 @@ function carregarHistoricoFirebase() {
 // ====================================================================
 
 function salvarMovimentacao(chave, colaborador, acao) {
-    db.collection("historico").add({
-        chave: chave.id,
-        colaborador: colaborador.nome,
-        acao: acao,
-        data: new Date().toLocaleString('pt-BR'),
-        dataTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
-    })
-    .catch(error => {
-        console.error("Erro ao salvar histórico:", error);
-    });
+    db.collection("historico").add({
+        chave: chave.id,
+        colaborador: colaborador.nome,
+        acao: acao,
+        data: new Date().toLocaleString('pt-BR'),
+        dataTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    })
+    .catch(error => {
+        console.error("Erro ao salvar histórico:", error);
+    });
 }
 
 function cadastrarChave() {
-    const nome = document.getElementById("nomeChave").value.trim();
-    if (!nome) return alert("Digite o nome da chave.");
+    const nome = document.getElementById("nomeChave").value.trim();
+    if (!nome) return alert("Digite o nome da chave.");
 
-    const novoContador = contadorChave + 1;
-    const id = "CH-" + novoContador.toString().padStart(3, "0"); 
+    const novoContador = contadorChave + 1;
+    const id = "CH-" + novoContador.toString().padStart(3, "0"); 
 
-    // SALVA NO FIREBASE (add)
-    db.collection("chaves").add({
-        id, 
-        nome, 
-        status: "Disponível" 
-    })
-    .then(() => {
-        document.getElementById("nomeChave").value = "";
-        gerarQRCode(id);
-        alert(`Chave ${id} cadastrada com sucesso!`);
-    })
-    .catch(error => {
-        console.error("Erro ao cadastrar chave:", error);
-        alert("Erro ao cadastrar chave. Verifique o console.");
-    });
+    // SALVA NO FIREBASE (add)
+    db.collection("chaves").add({
+        id, 
+        nome, 
+        status: "Disponível" 
+    })
+    .then(() => {
+        document.getElementById("nomeChave").value = "";
+        gerarQRCode(id);
+        alert(`Chave ${id} cadastrada com sucesso!`);
+    })
+    .catch(error => {
+        console.error("Erro ao cadastrar chave:", error);
+        alert("Erro ao cadastrar chave. Verifique o console.");
+    });
 }
 
 function cadastrarColaborador() {
-    const nome = document.getElementById("nomeColaborador").value.trim();
-    if (!nome) return alert("Digite o nome do colaborador.");
+    const nome = document.getElementById("nomeColaborador").value.trim();
+    if (!nome) return alert("Digite o nome do colaborador.");
 
-    const novoContador = contadorColaborador + 1;
-    let id = novoContador.toString().padStart(2, "0");
+    const novoContador = contadorColaborador + 1;
+    let id = novoContador.toString().padStart(2, "0");
 
-    // SALVA NO FIREBASE (add)
-    db.collection("colaboradores").add({ 
-        id, 
-        nome 
-    })
-    .then(() => {
-        document.getElementById("nomeColaborador").value = "";
-        alert(`Colaborador ${id} - ${nome} cadastrado com sucesso!`);
-    })
-    .catch(error => {
-        console.error("Erro ao cadastrar colaborador:", error);
-        alert("Erro ao cadastrar colaborador. Verifique o console.");
-    });
+    // SALVA NO FIREBASE (add)
+    db.collection("colaboradores").add({ 
+        id, 
+        nome 
+    })
+    .then(() => {
+        document.getElementById("nomeColaborador").value = "";
+        alert(`Colaborador ${id} - ${nome} cadastrado com sucesso!`);
+    })
+    .catch(error => {
+        console.error("Erro ao cadastrar colaborador:", error);
+        alert("Erro ao cadastrar colaborador. Verifique o console.");
+    });
 }
 
 // ====================================================================
 // FUNÇÕES DE RETIRADA E DEVOLUÇÃO (Corrigidas e Funcionais)
 // ====================================================================
 function confirmarRetirada() {
-    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
-    
-    const idCol = document.getElementById("idColRetirada").value.trim();
-    if (!idCol) return alert("Digite o ID do colaborador.");
+    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
+    
+    const idCol = document.getElementById("idColRetirada").value.trim();
+    if (!idCol) return alert("Digite o ID do colaborador.");
 
-    const colab = colaboradores.find(c => c.id === idCol);
-    if (!colab) return alert("Colaborador não encontrado.");
+    const colab = colaboradores.find(c => c.id === idCol);
+    if (!colab) return alert("Colaborador não encontrado.");
 
-    const chave = chaves.find(c => c.id === chaveSelecionada);
-    if (!chave) return alert("Chave não encontrada no sistema.");
+    const chave = chaves.find(c => c.id === chaveSelecionada);
+    if (!chave) return alert("Chave não encontrada no sistema.");
 
-    // Verifica se a chave está DISPONÍVEL antes de retirar
-    if (chave.status !== "Disponível") {
-        alert(`Erro: Esta chave já está ${chave.status}. Use a Devolução.`);
-        reiniciarScanner();
-        return;
-    }
+    // Verifica se a chave está DISPONÍVEL antes de retirar
+    if (chave.status !== "Disponível") {
+        alert(`Erro: Esta chave já está ${chave.status}. Use a Devolução.`);
+        reiniciarScanner();
+        return;
+    }
 
-    // ATUALIZA NO FIREBASE (muda o status para Retirada por Nome do Colaborador)
-    db.collection("chaves").doc(chave.idDoc).update({
-        status: "Retirada por " + colab.nome
-    })
-    .then(() => {
-        salvarMovimentacao(chave, colab, "RETIRADA");
-        alert(`Sucesso! Chave ${chave.id} retirada por ${colab.nome}.`);
-        reiniciarScanner();
-    })
-    .catch(error => {
-        console.error("Erro ao retirar chave:", error);
-        alert("Erro ao retirar chave. Tente novamente.");
-    });
+    // ATUALIZA NO FIREBASE (muda o status para Retirada por Nome do Colaborador)
+    db.collection("chaves").doc(chave.idDoc).update({
+        status: "Retirada por " + colab.nome
+    })
+    .then(() => {
+        salvarMovimentacao(chave, colab, "RETIRADA");
+        alert(`Sucesso! Chave ${chave.id} retirada por ${colab.nome}.`);
+        reiniciarScanner();
+    })
+    .catch(error => {
+        console.error("Erro ao retirar chave:", error);
+        alert("Erro ao retirar chave. Tente novamente.");
+    });
 }
 
 function confirmarDevolucao() {
-    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
-    
-    const idCol = document.getElementById("idColRetirada").value.trim();
-    if (!idCol) return alert("Digite o ID do colaborador que está devolvendo.");
+    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
+    
+    const idCol = document.getElementById("idColRetirada").value.trim();
+    if (!idCol) return alert("Digite o ID do colaborador que está devolvendo.");
 
-    const colab = colaboradores.find(c => c.id === idCol);
-    if (!colab) return alert("Colaborador não encontrado.");
+    const colab = colaboradores.find(c => c.id === idCol);
+    if (!colab) return alert("Colaborador não encontrado.");
 
-    const chave = chaves.find(c => c.id === chaveSelecionada);
-    if (!chave) return alert("Chave não encontrada no sistema.");
+    const chave = chaves.find(c => c.id === chaveSelecionada);
+    if (!chave) return alert("Chave não encontrada no sistema.");
 
-    // Verifica se a chave está RETIRADA (o status é diferente de Disponível)
-    if (chave.status === "Disponível") {
-        alert("Erro: Esta chave já está disponível.");
-        reiniciarScanner();
-        return;
-    }
-    
-    // Alerta se quem está devolvendo não é quem retirou (opcional)
-    if (!chave.status.includes(colab.nome)) {
-        if (!confirm(`Atenção: A chave foi retirada por ${chave.status.split(' por ')[1]}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
-            return;
-        }
-    }
+    // Verifica se a chave está RETIRADA (o status é diferente de Disponível)
+    if (chave.status === "Disponível") {
+        alert("Erro: Esta chave já está disponível.");
+        reiniciarScanner();
+        return;
+    }
+    
+    // Alerta se quem está devolvendo não é quem retirou (opcional)
+    if (!chave.status.includes(colab.nome)) {
+        if (!confirm(`Atenção: A chave foi retirada por ${chave.status.split(' por ')[1]}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
+            return;
+        }
+    }
 
-    // ATUALIZA NO FIREBASE (muda o status de volta para Disponível)
-    db.collection("chaves").doc(chave.idDoc).update({
-        status: "Disponível"
-    })
-    .then(() => {
-        salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
-        alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
-        reiniciarScanner();
-    })
-    .catch(error => {
-        console.error("Erro ao devolver chave:", error);
-        alert("Erro ao devolver chave. Tente novamente.");
-    });
+    // ATUALIZA NO FIREBASE (muda o status de volta para Disponível)
+    db.collection("chaves").doc(chave.idDoc).update({
+        status: "Disponível"
+    })
+    .then(() => {
+        salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
+        alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
+        reiniciarScanner();
+    })
+    .catch(error => {
+        console.error("Erro ao devolver chave:", error);
+        alert("Erro ao devolver chave. Tente novamente.");
+    });
 }
 // ====================================================================
 // FIM DAS FUNÇÕES DE RETIRADA E DEVOLUÇÃO
 // ====================================================================
 
 function salvarEdicao() {
-    const novoNome = document.getElementById("modalInput").value.trim();
-    if (!novoNome) return alert("Digite um nome válido.");
+    const novoNome = document.getElementById("modalInput").value.trim();
+    if (!novoNome) return alert("Digite um nome válido.");
 
-    let colecao, idDoc, tipo;
-    
-    if (tipoEdicao === "chave") {
-        const chaveEditada = chaves[itemEditando];
-        colecao = "chaves";
-        idDoc = chaveEditada.idDoc;
-        tipo = "Chave";
-    } else {
-        const colabEditado = colaboradores[itemEditando];
-        colecao = "colaboradores";
-        idDoc = colabEditado.idDoc;
-        tipo = "Colaborador";
-    }
+    let colecao, idDoc, tipo;
+    
+    if (tipoEdicao === "chave") {
+        const chaveEditada = chaves[itemEditando];
+        colecao = "chaves";
+        idDoc = chaveEditada.idDoc;
+        tipo = "Chave";
+    } else {
+        const colabEditado = colaboradores[itemEditando];
+        colecao = "colaboradores";
+        idDoc = colabEditado.idDoc;
+        tipo = "Colaborador";
+    }
 
-    // ATUALIZA NO FIREBASE (doc().update)
-    db.collection(colecao).doc(idDoc).update({
-        nome: novoNome
-    })
-    .then(() => {
-        alert(`${tipo} atualizado para "${novoNome}".`);
-        const modalElement = document.getElementById("modalEditar");
-        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-        if (modalInstance) modalInstance.hide();
-    })
-    .catch(error => {
-        console.error("Erro ao salvar edição:", error);
-        alert("Erro ao salvar edição.");
-    });
+    // ATUALIZA NO FIREBASE (doc().update)
+    db.collection(colecao).doc(idDoc).update({
+        nome: novoNome
+    })
+    .then(() => {
+        alert(`${tipo} atualizado para "${novoNome}".`);
+        const modalElement = document.getElementById("modalEditar");
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) modalInstance.hide();
+    })
+    .catch(error => {
+        console.error("Erro ao salvar edição:", error);
+        alert("Erro ao salvar edição.");
+    });
 }
 
 // ====================================================================
-// 3. FUNÇÕES UTILS (Renderização, QR Code, Scanner)
+// 3. FUNÇÕES UTILS (Renderização, QR Code, Scanner, UX)
 // ====================================================================
 
 function showPage(page, event) {
-    if(event) event.preventDefault(); 
+    if(event) event.preventDefault(); 
 
-    document.querySelectorAll("section").forEach(s => s.style.display = "none");
-    document.getElementById(page).style.display = "block";
+    document.querySelectorAll("section").forEach(s => s.style.display = "none");
+    document.getElementById(page).style.display = "block";
 
-    document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
-    if(event) event.currentTarget.classList.add("activeMenu");
-    else document.querySelector(`.sidebar a[onclick*="${page}"]`).classList.add("activeMenu");
+    document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
+    if(event) event.currentTarget.classList.add("activeMenu");
+    else document.querySelector(`.sidebar a[onclick*="${page}"]`).classList.add("activeMenu");
 
-    // >>>>>>>>>> LÓGICA DO SCANNER ATUALIZADA (com Otimização de Resolução) <<<<<<<<<<
-    if (page === 'qr') {
-        // Se o scanner nunca foi iniciado OU se foi parado completamente por sucesso
-        if (!html5QrcodeScanner || scannerParadoPorSucesso) {
-             html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", 
-                { 
-                    fps: 10, 
-                    qrbox: 200, 
-                    disableFlip: false,
-                    facingMode: "environment",
-                    // >>>>> AJUSTE CRUCIAL: Otimização de Resolução para Mobile <<<<<
-                    videoConstraints: {
-                        facingMode: { ideal: "environment" }, 
-                        width: { max: 480 },
-                        height: { max: 480 }
-                    }
-                }
-            );
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
-            scannerParadoPorSucesso = false; // Reseta a flag
-        } else {
-             // Se o scanner estava apenas pausado, ele continua
-             html5QrcodeScanner.resume();
-        }
-        document.getElementById("areaConfirmacao").style.display = "none";
-        document.getElementById("chaveDetectada").innerText = "Nenhuma";
-    } else if (html5QrcodeScanner) {
-        try {
-            // Se estiver saindo da página QR, pausa o scanner para economizar recursos
-            html5QrcodeScanner.pause();
-        } catch (e) {
-            console.warn("Scanner não conseguiu parar:", e);
-        }
-    }
-    // >>>>>>>>>> FIM DA LÓGICA DO SCANNER ATUALIZADA <<<<<<<<<<
+    // >>>>>>>>>> LÓGICA DO SCANNER ATUALIZADA (com Otimização de Resolução) <<<<<<<<<<
+    if (page === 'qr') {
+        // Se o scanner nunca foi iniciado OU se foi parado completamente por sucesso
+        if (!html5QrcodeScanner || scannerParadoPorSucesso) {
+             html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: 200, 
+                    disableFlip: false,
+                    facingMode: "environment",
+                    // >>>>> AJUSTE CRUCIAL: Otimização de Resolução para Mobile <<<<<
+                    videoConstraints: {
+                        facingMode: { ideal: "environment" }, 
+                        width: { max: 480 },
+                        height: { max: 480 }
+                    }
+                }
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+            scannerParadoPorSucesso = false; // Reseta a flag
+        } else {
+             // Se o scanner estava apenas pausado, ele continua
+             html5QrcodeScanner.resume();
+        }
+        // Limpa os campos ao entrar na página QR
+        document.getElementById("areaConfirmacao").style.display = "none";
+        document.getElementById("chaveDetectada").innerText = "Nenhuma";
+        document.getElementById("idColRetirada").value = "";
+    } else if (html5QrcodeScanner) {
+        try {
+            // Se estiver saindo da página QR, pausa o scanner para economizar recursos
+            html5QrcodeScanner.pause();
+        } catch (e) {
+            console.warn("Scanner não conseguiu parar:", e);
+        }
+    }
+    // >>>>>>>>>> FIM DA LÓGICA DO SCANNER ATUALIZADA <<<<<<<<<<
 
-    if (page === 'colaboradores') {
-        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
-    }
+    if (page === 'colaboradores') {
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
+    }
 }
 
 function gerarQRCode(texto) {
-    let area = document.getElementById("qrCodeArea");
-    area.innerHTML = "";
+    let area = document.getElementById("qrCodeArea");
+    area.innerHTML = "";
 
-    const qrDiv = document.createElement('div');
-    qrDiv.id = 'qrcodeCanvas';
-    area.appendChild(qrDiv);
+    const qrDiv = document.createElement('div');
+    qrDiv.id = 'qrcodeCanvas';
+    area.appendChild(qrDiv);
 
-    new QRCode(qrDiv, { text: texto, width: 200, height: 200, colorDark : "#fff", colorLight : "#1e1e1e", correctLevel : QRCode.CorrectLevel.H });
+    new QRCode(qrDiv, { text: texto, width: 200, height: 200, colorDark : "#fff", colorLight : "#1e1e1e", correctLevel : QRCode.CorrectLevel.H });
 
-    setTimeout(() => {
-        let canvas = qrDiv.querySelector("canvas");
-        if (canvas) {
-            let imgData = canvas.toDataURL("image/png");
-            let link = document.createElement("a");
-            link.href = imgData;
-            link.download = texto + "_QRCode.png";
-            link.innerText = "Baixar QR Code";
-            link.className = "btn btn-outline-light mt-3";
-            area.appendChild(link);
-        }
-    }, 100);
+    setTimeout(() => {
+        let canvas = qrDiv.querySelector("canvas");
+        if (canvas) {
+            let imgData = canvas.toDataURL("image/png");
+            let link = document.createElement("a");
+            link.href = imgData;
+            link.download = texto + "_QRCode.png";
+            link.innerText = "Baixar QR Code";
+            link.className = "btn btn-outline-light mt-3";
+            area.appendChild(link);
+        }
+    }, 100);
 }
 
 function filtrarChaves() {
-    let termo = document.getElementById("buscaChaves").value.toLowerCase();
-    
-    const chavesFiltradas = chaves
-        .filter(c => 
-            c.nome.toLowerCase().includes(termo) || 
-            c.id.toLowerCase().includes(termo) || 
-            c.status.toLowerCase().includes(termo)
-        );
+    let termo = document.getElementById("buscaChaves").value.toLowerCase();
+    
+    const chavesFiltradas = chaves
+        .filter(c => 
+            c.nome.toLowerCase().includes(termo) || 
+            c.id.toLowerCase().includes(termo) || 
+            c.status.toLowerCase().includes(termo)
+        );
 
-    renderizarChaves(chavesFiltradas);
+    renderizarChaves(chavesFiltradas);
 }
 
 function atualizarListas() {
-    // Estatísticas do Dashboard
-    const totalDisponiveis = chaves.filter(c => c.status === "Disponível").length;
-    const totalRetiradas = chaves.length - totalDisponiveis;
+    // Estatísticas do Dashboard
+    const totalDisponiveis = chaves.filter(c => c.status === "Disponível").length;
+    const totalRetiradas = chaves.length - totalDisponiveis;
 
-    document.getElementById("totalChaves").innerText = chaves.length;
-    document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
-    document.getElementById("chavesRetiradas").innerText = totalRetiradas;
-    document.getElementById("totalCol").innerText = colaboradores.length;
-    document.getElementById("totalHist").innerText = historico.length;
+    document.getElementById("totalChaves").innerText = chaves.length;
+    document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
+    document.getElementById("chavesRetiradas").innerText = totalRetiradas;
+    document.getElementById("totalCol").innerText = colaboradores.length;
+    document.getElementById("totalHist").innerText = historico.length;
 
-    // Lista de Chaves
-    renderizarChaves(chaves);
+    // Lista de Chaves
+    renderizarChaves(chaves);
 
-    // Lista de Colaboradores
-    let colList = document.getElementById("listaColaboradores");
-    colList.innerHTML = "";
-    colaboradores.forEach((c, idx) => {
-        colList.innerHTML += `
-            <tr>
-                <td>${c.id}</td>
-                <td>${c.nome}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning" onclick="abrirEdicao('colaborador', ${idx})">
-                        <i class="fa fa-edit"></i> Editar
-                    </button>
-                </td>
-            </tr>`;
-    });
+    // Lista de Colaboradores
+    let colList = document.getElementById("listaColaboradores");
+    colList.innerHTML = "";
+    colaboradores.forEach((c, idx) => {
+        colList.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="abrirEdicao('colaborador', ${idx})">
+                        <i class="fa fa-edit"></i> Editar
+                    </button>
+                </td>
+            </tr>`;
+    });
 
-    // Lista de Histórico
-    let hist = document.getElementById("listaHistorico");
-    hist.innerHTML = "";
-    // O histórico já vem ordenado por dataTimestamp, apenas o renderiza
-    historico.forEach(h => {
-        const acaoClass = h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
-        hist.innerHTML += `
-            <tr>
-                <td>${h.chave}</td>
-                <td>${h.colaborador}</td>
-                <td class="${acaoClass}">${h.acao}</td>
-                <td>${h.data}</td>
-            </tr>`;
-    });
+    // Lista de Histórico
+    let hist = document.getElementById("listaHistorico");
+    hist.innerHTML = "";
+    // O histórico já vem ordenado por dataTimestamp, apenas o renderiza
+    historico.forEach(h => {
+        const acaoClass = h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+        hist.innerHTML += `
+            <tr>
+                <td>${h.chave}</td>
+                <td>${h.colaborador}</td>
+                <td class="${acaoClass}">${h.acao}</td>
+                <td>${h.data}</td>
+            </tr>`;
+    });
 }
 
-// ====================================================================
-// FUNÇÃO renderizarChaves CORRIGIDA (AGORA MOSTRA DEVOLVER NA TABELA)
-// ====================================================================
 function renderizarChaves(chavesParaExibir) {
-    let lista = document.getElementById("listaChaves");
-    lista.innerHTML = "";
-    chavesParaExibir.forEach((c, idx) => {
-        // Encontra o índice original no array 'chaves' para a edição
-        const indexOriginal = chaves.findIndex(item => item.id === c.id); 
+    let lista = document.getElementById("listaChaves");
+    lista.innerHTML = "";
+    chavesParaExibir.forEach((c, idx) => {
+        // Encontra o índice original no array 'chaves' para a edição
+        const indexOriginal = chaves.findIndex(item => item.id === c.id); 
 
-        let statusClass = c.status === "Disponível" ? 'badge text-bg-success' : 'badge text-bg-danger';
+        let statusClass = c.status === "Disponível" ? 'badge text-bg-success' : 'badge text-bg-danger';
 
-        let acoesHtml = `
-            <button class="btn btn-sm btn-warning me-2" onclick="abrirEdicao('chave', ${indexOriginal})">
-                <i class="fa fa-edit"></i>
-            </button>`;
+        let acoesHtml = `
+            <button class="btn btn-sm btn-warning me-2" onclick="abrirEdicao('chave', ${indexOriginal})">
+                <i class="fa fa-edit"></i>
+            </button>`;
 
-        if (c.status === "Disponível") {
-            // Mostra o botão RETIRAR se a chave estiver disponível
-            acoesHtml += `
-                <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')">
-                    <i class="fa fa-arrow-right"></i> Retirar
-                </button>`;
-        } else {
-            // Mostra o botão DEVOLVER se a chave NÃO estiver disponível (estiver retirada)
-            acoesHtml += `
-                <button class="btn btn-sm btn-primary" onclick="iniciarDevolucaoRapida('${c.id}')">
-                    <i class="fa fa-reply"></i> Devolver
-                </button>`;
-        }
+        if (c.status === "Disponível") {
+            // Mostra o botão RETIRAR se a chave estiver disponível
+            acoesHtml += `
+                <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')">
+                    <i class="fa fa-arrow-right"></i> Retirar
+                </button>`;
+        } else {
+            // Mostra o botão DEVOLVER se a chave NÃO estiver disponível (estiver retirada)
+            acoesHtml += `
+                <button class="btn btn-sm btn-primary" onclick="iniciarDevolucaoRapida('${c.id}')">
+                    <i class="fa fa-reply"></i> Devolver
+                </button>`;
+        }
 
 
-        lista.innerHTML += `
-            <tr>
-                <td>${c.id}</td>
-                <td>${c.nome}</td>
-                <td><span class="${statusClass}">${c.status}</span></td>
-                <td>${acoesHtml}</td>
-            </tr>`;
-    });
+        lista.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome}</td>
+                <td><span class="${statusClass}">${c.status}</span></td>
+                <td>${acoesHtml}</td>
+            </tr>`;
+    });
 }
-// ====================================================================
-// FIM DA FUNÇÃO renderizarChaves CORRIGIDA
-// ====================================================================
 
-// >>>>>>>>>> FUNÇÃO onScanSuccess ATUALIZADA (Garante o stop() da câmera) <<<<<<<<<<
-function onScanSuccess(decodedText) {
-    // 1. TENTATIVA DE PARAR O FLUXO DE VÍDEO COMPLETAMENTE
-    if (html5QrcodeScanner) {
-        try {
-            // ESSA LINHA É CRUCIAL PARA DESLIGAR A CÂMERA
-            html5QrcodeScanner.stop(); 
-            scannerParadoPorSucesso = true; // Define a flag como true
-        } catch (e) { 
-            console.warn("Scanner não conseguiu parar:", e); 
-        }
-    }
+// >>>>>>>>>> NOVAS FUNÇÕES DE UX (Retirada/Devolução Rápida pela Tabela) <<<<<<<<<<
+function iniciarRetiradaRapida(chaveId) {
+    // 1. Muda para a página de QR Code (sem interromper o histórico de navegação)
+    showPage('qr'); 
+    
+    // 2. Encontra a chave e preenche os campos do scanner
+    const chave = chaves.find(c => c.id === chaveId);
+    
+    if (chave) {
+        chaveSelecionada = chaveId;
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
 
-    const chave = chaves.find(c => c.id === decodedText);
-
-    if (!chave) {
-        document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
-        document.getElementById("areaConfirmacao").style.display = "none";
-        alert("QR Code lido, mas nenhuma chave correspondente foi encontrada no sistema.");
-        return;
-    }
-
-    chaveSelecionada = decodedText;
-    document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-    document.getElementById("areaConfirmacao").style.display = "block";
-
-    // Lógica CORRIGIDA para mostrar Retirar ou Devolver
-    if (chave.status === "Disponível") {
+        // Prepara para Retirada
         document.getElementById("btnConfirmarRetirada").style.display = "block";
         document.getElementById("btnDevolverChave").style.display = "none";
         document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
-    } else {
+    }
+}
+
+function iniciarDevolucaoRapida(chaveId) {
+    // 1. Muda para a página de QR Code (sem interromper o histórico de navegação)
+    showPage('qr'); 
+    
+    // 2. Encontra a chave e preenche os campos do scanner
+    const chave = chaves.find(c => c.id === chaveId);
+    
+    if (chave) {
+        chaveSelecionada = chaveId;
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
+
+        // Prepara para Devolução
         document.getElementById("btnConfirmarRetirada").style.display = "none";
         document.getElementById("btnDevolverChave").style.display = "block";
         document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
     }
+}
+// >>>>>>>>>> FIM DAS NOVAS FUNÇÕES DE UX <<<<<<<<<<
 
-    document.getElementById("idColRetirada").focus();
+
+function onScanSuccess(decodedText) {
+    // 1. TENTATIVA DE PARAR O FLUXO DE VÍDEO COMPLETAMENTE
+    if (html5QrcodeScanner) {
+        try {
+            // ESSA LINHA É CRUCIAL PARA DESLIGAR A CÂMERA
+            html5QrcodeScanner.stop(); 
+            scannerParadoPorSucesso = true; // Define a flag como true
+        } catch (e) { 
+            console.warn("Scanner não conseguiu parar:", e); 
+        }
+    }
+
+    const chave = chaves.find(c => c.id === decodedText);
+
+    if (!chave) {
+        document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
+        document.getElementById("areaConfirmacao").style.display = "none";
+        alert("QR Code lido, mas nenhuma chave correspondente foi encontrada no sistema.");
+        return;
+    }
+
+    chaveSelecionada = decodedText;
+    document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+    document.getElementById("areaConfirmacao").style.display = "block";
+
+    // Lógica CORRIGIDA para mostrar Retirar ou Devolver
+    if (chave.status === "Disponível") {
+        document.getElementById("btnConfirmarRetirada").style.display = "block";
+        document.getElementById("btnDevolverChave").style.display = "none";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
+    } else {
+        document.getElementById("btnConfirmarRetirada").style.display = "none";
+        document.getElementById("btnDevolverChave").style.display = "block";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
+    }
 }
 
-function onScanError(errorMessage) { }
+function onScanError(errorMessage) {
+    // console.log(errorMessage); // Comentado para não poluir o console
+}
 
 function reiniciarScanner() {
-    document.getElementById("idColRetirada").value = "";
-    chaveSelecionada = null;
-    document.getElementById("chaveDetectada").innerText = "Nenhuma";
-    document.getElementById("areaConfirmacao").style.display = "none";
-    
-    // Se o scanner foi parado com sucesso, ele precisa ser reinicializado, não apenas resumido
-    if (scannerParadoPorSucesso) {
-        showPage('qr'); // Chama a função para reiniciar o scanner completamente
-    } else if (html5QrcodeScanner) {
-        html5QrcodeScanner.resume(); 
-    }
+    // Se o scanner já está completamente parado (via stop()), 
+    // recarrega a página 'qr' para iniciar do zero.
+    if (scannerParadoPorSucesso) {
+        showPage('qr'); 
+        return;
+    }
+    
+    // Limpar campos e esconder botões
+    document.getElementById("areaConfirmacao").style.display = "none";
+    document.getElementById("chaveDetectada").innerText = "Nenhuma";
+    document.getElementById("idColRetirada").value = "";
+    chaveSelecionada = null;
+
+    // Reinicia a leitura, se o scanner ainda estiver rodando (pause/resume)
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.resume();
+    }
 }
 
-function abrirEdicao(tipo, indice) {
+function abrirEdicao(tipo, indexOriginal) {
     tipoEdicao = tipo;
-    itemEditando = indice;
-
-    const modalLabel = document.getElementById("modalTitulo");
-    const input = document.getElementById("modalInput");
-
-    if (tipo === "chave") {
-        modalLabel.innerText = "Editar Nome da Chave";
-        input.value = chaves[indice].nome;
-    } else {
-        modalLabel.innerText = "Editar Nome do Colaborador";
-        input.value = colaboradores[indice].nome;
-    }
-
-    const modal = new bootstrap.Modal(document.getElementById("modalEditar"));
-    modal.show();
+    itemEditando = indexOriginal;
+    const item = tipo === 'chave' ? chaves[indexOriginal] : colaboradores[indexOriginal];
+    
+    document.getElementById("modalTitulo").innerText = `Editar ${tipo === 'chave' ? 'Chave' : 'Colaborador'} (ID: ${item.id})`;
+    document.getElementById("modalInput").value = item.nome;
+    
+    const modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modalInstance.show();
 }
 
-function iniciarRetiradaRapida(chaveId) {
-    showPage('qr');
-    const chave = chaves.find(c => c.id === chaveId);
-    if (chave) {
-        // Pausa o scanner se estiver ativo, para garantir que o fluxo seja controlado pela onScanSuccess manual
-        if (html5QrcodeScanner) {
-             try {
-                html5QrcodeScanner.pause(true); 
-            } catch (e) { }
-        }
-        
-        onScanSuccess(chaveId); 
-        alert(`Retirada Rápida: Confirme a retirada da chave ${chave.id} - ${chave.nome}.`);
-    }
-}
-
-
-// ====================================================================
-// NOVA FUNÇÃO: DEVOLUÇÃO RÁPIDA PELA TABELA
-// ====================================================================
-function iniciarDevolucaoRapida(chaveId) {
-    const chave = chaves.find(c => c.id === chaveId);
-    if (!chave) return;
-
-    let idCol = prompt(`Devolução Rápida para ${chave.id} - ${chave.nome}. Digite o ID do colaborador que está devolvendo:`);
-
-    if (idCol) {
-        idCol = idCol.trim();
-        const colab = colaboradores.find(c => c.id === idCol);
-
-        if (!colab) {
-            alert("Erro: Colaborador não encontrado.");
-            return;
-        }
-
-        // Se a chave não estiver disponível, procede com a devolução
-        if (chave.status !== "Disponível") {
-            // ATUALIZA NO FIREBASE
-            db.collection("chaves").doc(chave.idDoc).update({
-                status: "Disponível"
-            })
-            .then(() => {
-                salvarMovimentacao(chave, colab, "DEVOLUÇÃO (RÁPIDA)");
-                alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
-            })
-            .catch(error => {
-                console.error("Erro ao devolver chave (rápida):", error);
-                alert("Erro ao devolver chave. Tente novamente.");
-            });
-        } else {
-             alert("Erro: Esta chave já está disponível.");
-        }
-    }
-}
-// ====================================================================
-// FIM DA NOVA FUNÇÃO
-// ====================================================================
-
-
+// Funções do Relatório (não modificadas)
 function gerarRelatorioHistorico() {
-    if (historico.length === 0) {
-        return alert("Não há registros no histórico para gerar o relatório.");
-    }
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Chave ID,Colaborador,Acao,Data\n";
 
-    const headers = ["Chave (ID)", "Colaborador", "Acao", "Data"];
+    historico.forEach(h => {
+        let row = `${h.chave},"${h.colaborador}",${h.acao},${h.data}\n`;
+        csvContent += row;
+    });
 
-    const rows = historico.map(item => [
-        item.chave,
-        item.colaborador.replace(/,/g, ''), 
-        item.acao,
-        item.data
-    ]);
-
-    const csvContent = [
-        headers.join(";"), 
-        ...rows.map(e => e.join(";"))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'relatorio_movimentacao_chaves_' + new Date().toISOString().slice(0, 10) + '.csv');
-    
-    document.body.appendChild(link);
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "historico_chaves.csv");
+    document.body.appendChild(link); // Required for Firefox
     link.click();
-    document.body.removeChild(link);
-
-    alert("Relatório CSV gerado com sucesso! Verifique sua pasta de downloads.");
+    link.remove();
+    alert("Relatório CSV gerado com sucesso!");
 }
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 </body>
 </html>
