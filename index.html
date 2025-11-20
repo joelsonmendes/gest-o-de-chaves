@@ -336,7 +336,7 @@
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 1.3.1 (Correção do Scanner)</p>
+        <p>Versão 1.3.2 (Otimização do Scanner)</p>
     </footer>
 
 </div> 
@@ -648,7 +648,7 @@ function showPage(page, event) {
     if(event) event.currentTarget.classList.add("activeMenu");
     else document.querySelector(`.sidebar a[onclick*="${page}"]`).classList.add("activeMenu");
 
-    // >>>>>>>>>> LÓGICA DO SCANNER ATUALIZADA <<<<<<<<<<
+    // >>>>>>>>>> LÓGICA DO SCANNER ATUALIZADA (com Otimização de Resolução) <<<<<<<<<<
     if (page === 'qr') {
         // Se o scanner nunca foi iniciado OU se foi parado completamente por sucesso
         if (!html5QrcodeScanner || scannerParadoPorSucesso) {
@@ -658,7 +658,13 @@ function showPage(page, event) {
                     fps: 10, 
                     qrbox: 200, 
                     disableFlip: false,
-                    facingMode: "environment" 
+                    facingMode: "environment",
+                    // >>>>> NOVO AJUSTE: Otimização de Resolução para Mobile <<<<<
+                    videoConstraints: {
+                        facingMode: { ideal: "environment" }, 
+                        width: { max: 480 },
+                        height: { max: 480 }
+                    }
                 }
             );
             html5QrcodeScanner.render(onScanSuccess, onScanError);
@@ -812,12 +818,13 @@ function renderizarChaves(chavesParaExibir) {
 // FIM DA FUNÇÃO renderizarChaves CORRIGIDA
 // ====================================================================
 
-// >>>>>>>>>> FUNÇÃO onScanSuccess ATUALIZADA <<<<<<<<<<
+// >>>>>>>>>> FUNÇÃO onScanSuccess ATUALIZADA (Garante o stop() da câmera) <<<<<<<<<<
 function onScanSuccess(decodedText) {
     // 1. TENTATIVA DE PARAR O FLUXO DE VÍDEO COMPLETAMENTE
     if (html5QrcodeScanner) {
         try {
-            html5QrcodeScanner.stop();
+            // ESSA LINHA É CRUCIAL PARA DESLIGAR A CÂMERA
+            html5QrcodeScanner.stop(); 
             scannerParadoPorSucesso = true; // Define a flag como true
         } catch (e) { 
             console.warn("Scanner não conseguiu parar:", e); 
