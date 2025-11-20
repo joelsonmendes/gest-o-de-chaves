@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Chaves — Dashboard Dark (Firebase)</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* =======================================
+           ESTILOS BASE (DARK MODE)
+           ======================================= */
+        body {
+            background: #121212;
+            color: #fff;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .content-wrapper {
+            margin-left: 250px; /* Margem padrão para desktop */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+        }
+        .card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #fff;
+        }
+        input, select, textarea {
+            background: #222 !important;
+            color: #fff !important;
+            border: 1px solid #444 !important;
+        }
+        input::placeholder {
+            color: #aaa !important;
+        }
+        .btn-custom {
+            background: #0d6efd;
+            border: none;
+            color: #fff;
+        }
+        .btn-custom:hover {
+            background: #0a58ca;
+            color: #fff;
+        }
+        .qr-box canvas {
+            display: block;
+            margin: 15px auto 0;
+            width: 200px !important;
+            height: 200px !important;
+        }
+        .table > :not(caption) > * > * {
+            background-color: #1e1e1e;
+            color: #fff;
+        }
+
+        /* =======================================
+           SIDEBAR (BARRA LATERAL)
+           ======================================= */
+        .sidebar {
+            height: 100vh;
+            background: #1f1f1f;
+            padding-top: 20px;
+            position: fixed;
+            width: 250px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar .logo-container {
+            padding: 0 15px 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .sidebar .logo-container img {
+           /* Usando o nome do arquivo da sua imagem */
+           max-width: 100%;
+           height: auto;
+           max-height: 60px;
+        }
+        .sidebar a {
+            color: #ccc;
+            padding: 15px 20px;
+            display: block;
+            transition: 0.2s;
+            font-size: 17px;
+            text-decoration: none;
+        }
+        .sidebar a:hover, .activeMenu {
+            background: #333;
+            color: #fff !important;
+        }
+
+        /* =======================================
+           FOOTER (RODAPÉ)
+           ======================================= */
+        .footer {
+            background: #1f1f1f;
+            color: #ccc;
+            text-align: center;
+            padding: 15px 20px;
+            font-size: 0.9em;
+            border-top: 1px solid #333;
+            margin-top: auto;
+        }
+
+
+        /* =======================================
+           RESPONSIVIDADE (SMARTPHONE/TABLET)
+           ======================================= */
+        @media (max-width: 768px) {
+            /* SIDEBAR: Vira um cabeçalho horizontal e rolável */
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative; 
+                padding-top: 10px;
+                flex-direction: row; 
+                overflow-x: auto; 
+                white-space: nowrap; 
+                border-bottom: 1px solid #333;
+            }
+
+            /* Links do menu em linha */
+            .sidebar a {
+                display: inline-block;
+                padding: 10px 15px;
+                font-size: 15px;
+            }
+
+            /* Logo ocupa a largura total acima dos links */
+            .sidebar .logo-container {
+                display: block;
+                text-align: center;
+                width: 100%;
+                border-bottom: none;
+                margin-bottom: 5px;
+            }
+
+            /* CONTEÚDO: Remove a margem fixa */
+            .content-wrapper {
+                margin-left: 0;
+                padding-top: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body onload="iniciarSistema()">
+
+<div class="sidebar">
+    <div class="logo-container">
+       <img src="Logo.png" alt="SENAIHUB Logo">
+    </div>
+    <a href="#" onclick="showPage('home', event)" class="activeMenu"><i class="fa fa-home"></i> Home</a>
+    <a href="#" onclick="showPage('chaves', event)"><i class="fa fa-key"></i> Chaves</a>
+    <a href="#" onclick="showPage('colaboradores', event)"><i class="fa fa-users"></i> Colaboradores</a>
+    <a href="#" onclick="showPage('historico', event)"><i class="fa fa-clock-rotate-left"></i> Histórico</a>
+    <a href="#" onclick="showPage('qr', event)"><i class="fa fa-qrcode"></i> Retirar por QR Code</a>
+</div>
+
+
+<div class="content-wrapper"> 
+    <div class="content">
+
+        <section id="home">
+            <h1 class="mb-4">🔑 Sistema de Gestão de Chaves</h1>
+            <hr/>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card p-4">
+                        <h3><i class="fa fa-key text-info"></i> Chaves</h3>
+                        <p class="mb-0">Total Registradas: <span id="totalChaves" class="fw-bold">0</span></p>
+                        <p class="mb-0">Disponíveis: <span id="chavesDisponiveis" class="fw-bold">0</span></p>
+                        <p class="mb-0">Retiradas: <span id="chavesRetiradas" class="fw-bold">0</span></p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="card p-4">
+                        <h3><i class="fa fa-users text-warning"></i> Colaboradores</h3>
+                        <p>Total: <span id="totalCol" class="fw-bold">0</span></p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="card p-4">
+                        <h3><i class="fa fa-clock-rotate-left text-success"></i> Histórico</h3>
+                        <p>Registros: <span id="totalHist" class="fw-bold">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="chaves" style="display:none;">
+            <h2><i class="fa fa-key text-info"></i> Gestão de Chaves</h2>
+            <hr/>
+
+            <div class="card p-4 mt-3">
+                <h4>Cadastrar Chave</h4>
+                <input id="nomeChave" placeholder="Nome da chave (Ex: Sala 101)" class="form-control mt-2">
+                <button class="btn btn-custom mt-2" onclick="cadastrarChave()">
+                    <i class="fa fa-plus"></i> Cadastrar e Gerar QR Code
+                </button>
+
+                <div id="qrCodeArea" class="qr-box text-center mt-3"></div>
+            </div>
+
+            <div class="card p-3 mt-4">
+                <h4>Buscar Chaves</h4>
+                <input id="buscaChaves" class="form-control" placeholder="Pesquisar por ID ou nome..." onkeyup="filtrarChaves()">
+            </div>
+
+            <div class="card mt-3 p-3">
+                <h4>Lista de Chaves</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaChaves"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="colaboradores" style="display:none;">
+            <h2><i class="fa fa-users text-warning"></i> Gestão de Colaboradores</h2>
+            <hr/>
+
+            <div class="card p-4 mt-3">
+                <h4>Cadastrar Colaborador</h4>
+                <input id="nomeColaborador" placeholder="Nome do colaborador" class="form-control mt-2">
+                <button class="btn btn-custom mt-3" onclick="cadastrarColaborador()">
+                    <i class="fa fa-user-plus"></i> Cadastrar
+                </button>
+                <p class="mt-3 mb-0"><b>Último ID gerado:</b> <span id="ultimoColID" class="fw-bold">Nenhum</span></p>
+            </div>
+
+            <div class="card mt-4 p-4">
+                <h4>Lista de Colaboradores</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaColaboradores"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="historico" style="display:none;">
+            <h2><i class="fa fa-clock-rotate-left text-success"></i> Histórico de Movimentações</h2>
+            <hr/>
+
+            <div class="card p-3 mb-4">
+                <h4>Relatórios</h4>
+                <button class="btn btn-success mt-2" onclick="gerarRelatorioHistorico()">
+                    <i class="fa fa-download"></i> Baixar Relatório Completo (CSV)
+                </button>
+            </div>
+
+            <div class="card mt-3 p-3">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>Chave (ID)</th>
+                                <th>Colaborador</th>
+                                <th>Ação</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaHistorico"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="qr" style="display:none;">
+            <h2><i class="fa fa-qrcode text-info"></i> Retirada por QR Code</h2>
+            <hr/>
+
+            <div class="card p-4 mt-3">
+                <h4>Escanear QR Code da Chave</h4>
+                <div id="reader" style="width:300px; margin: 0 auto;"></div>
+
+                <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
+
+                <div id="areaConfirmacao" style="display:none;">
+                    <input id="idColRetirada" placeholder="ID do colaborador que está retirando" class="form-control mt-2">
+
+                    <button id="btnConfirmarRetirada" class="btn btn-success mt-2 w-100" onclick="confirmarRetirada()">
+                        <i class="fa fa-check"></i> Confirmar Retirada
+                    </button>
+                    <button id="btnDevolverChave" class="btn btn-primary mt-2 w-100" onclick="confirmarDevolucao()">
+                        <i class="fa fa-reply"></i> Confirmar Devolução
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </div> 
+
+    <footer class="footer">
+        <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
+        <p>Versão 1.3.0 (Firebase)</p>
+    </footer>
+
+</div> 
+
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <label for="modalInput" class="form-label text-white">Novo Nome:</label>
+                <input id="modalInput" class="form-control" placeholder="Digite o novo nome">
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="btnSalvarEdicao">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//                    SCRIPT DO SISTEMA (com Firebase)
+// ============================================================
+
+// Variáveis Globais
+let chaves = [];
+let colaboradores = [];
+let historico = [];
+let contadorChave = 0; 
+let contadorColaborador = 0;
+let itemEditando = null;
+let tipoEdicao = null;
+let chaveSelecionada = null;
+
+let html5QrcodeScanner = null;
+let db = null; 
+
+/* ==================================
+    CONFIGURAÇÃO DO FIREBASE (PASSO 6 - Use suas credenciais aqui)
+================================== */
+const firebaseConfig = {
+  // SUAS CREDENCIAIS FORNECIDAS
+  apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8", 
+  authDomain: "gestao-chaves-app.firebaseapp.com",
+  projectId: "gestao-chaves-app", 
+  storageBucket:"gestao-chaves-app.firebasestorage.app",
+  messagingSenderId: "391255964652",
+  appId: "1:391255964652:web:6d27bb36bc9ff520349ec9",
+};
+
+function iniciarSistema() {
+    // Inicializa o Firebase e o Firestore
+    const app = firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+
+    // Inicia os listeners (carregamento em tempo real do Firebase)
+    carregarChavesFirebase();
+    carregarColaboradoresFirebase();
+    carregarHistoricoFirebase();
+
+    document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
+}
+
+// ====================================================================
+// 1. FUNÇÕES DE LEITURA
+// ====================================================================
+
+function carregarChavesFirebase() {
+    // onSnapshot: Escuta mudanças na coleção 'chaves' em tempo real
+    db.collection("chaves").onSnapshot((snapshot) => {
+        // Mapeia os documentos. O 'idDoc' é o ID interno do Firestore, crucial para UPDATE
+        chaves = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+        
+        // Recalcula o contador da chave baseando-se no ID mais alto
+        contadorChave = chaves.reduce((max, c) => {
+            const num = parseInt(c.id.split('-')[1]);
+            return num > max ? num : max;
+        }, 0);
+        
+        atualizarListas(); 
+    }, error => {
+        console.error("Erro ao carregar chaves:", error);
+    });
+}
+
+function carregarColaboradoresFirebase() {
+    db.collection("colaboradores").onSnapshot((snapshot) => {
+        colaboradores = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+
+        // Recalcula o contador do colaborador baseando-se no ID mais alto
+        contadorColaborador = colaboradores.reduce((max, c) => {
+            const num = parseInt(c.id);
+            return num > max ? num : max;
+        }, 0);
+        
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
+        atualizarListas();
+    }, error => {
+        console.error("Erro ao carregar colaboradores:", error);
+    });
+}
+
+function carregarHistoricoFirebase() {
+    // Ordena por dataTimestamp para garantir que o histórico mais novo apareça primeiro
+    db.collection("historico").orderBy("dataTimestamp", "desc").onSnapshot((snapshot) => {
+        historico = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
+        atualizarListas();
+    }, error => {
+        console.error("Erro ao carregar histórico:", error);
+    });
+}
+
+// ====================================================================
+// 2. FUNÇÕES DE ESCRITA E CRIAÇÃO
+// ====================================================================
+
+function salvarMovimentacao(chave, colaborador, acao) {
+    db.collection("historico").add({
+        chave: chave.id,
+        colaborador: colaborador.nome,
+        acao: acao,
+        data: new Date().toLocaleString('pt-BR'),
+        dataTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    })
+    .catch(error => {
+        console.error("Erro ao salvar histórico:", error);
+    });
+}
+
+function cadastrarChave() {
+    const nome = document.getElementById("nomeChave").value.trim();
+    if (!nome) return alert("Digite o nome da chave.");
+
+    const novoContador = contadorChave + 1;
+    const id = "CH-" + novoContador.toString().padStart(3, "0"); 
+
+    // SALVA NO FIREBASE (add)
+    db.collection("chaves").add({
+        id, 
+        nome, 
+        status: "Disponível" 
+    })
+    .then(() => {
+        document.getElementById("nomeChave").value = "";
+        gerarQRCode(id);
+        alert(`Chave ${id} cadastrada com sucesso!`);
+    })
+    .catch(error => {
+        console.error("Erro ao cadastrar chave:", error);
+        alert("Erro ao cadastrar chave. Verifique o console.");
+    });
+}
+
+function cadastrarColaborador() {
+    const nome = document.getElementById("nomeColaborador").value.trim();
+    if (!nome) return alert("Digite o nome do colaborador.");
+
+    const novoContador = contadorColaborador + 1;
+    let id = novoContador.toString().padStart(2, "0");
+
+    // SALVA NO FIREBASE (add)
+    db.collection("colaboradores").add({ 
+        id, 
+        nome 
+    })
+    .then(() => {
+        document.getElementById("nomeColaborador").value = "";
+        alert(`Colaborador ${id} - ${nome} cadastrado com sucesso!`);
+    })
+    .catch(error => {
+        console.error("Erro ao cadastrar colaborador:", error);
+        alert("Erro ao cadastrar colaborador. Verifique o console.");
+    });
+}
+
+// ====================================================================
+// FUNÇÕES DE RETIRADA E DEVOLUÇÃO (Corrigidas e Funcionais)
+// ====================================================================
+function confirmarRetirada() {
+    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
+    
+    const idCol = document.getElementById("idColRetirada").value.trim();
+    if (!idCol) return alert("Digite o ID do colaborador.");
+
+    const colab = colaboradores.find(c => c.id === idCol);
+    if (!colab) return alert("Colaborador não encontrado.");
+
+    const chave = chaves.find(c => c.id === chaveSelecionada);
+    if (!chave) return alert("Chave não encontrada no sistema.");
+
+    // Verifica se a chave está DISPONÍVEL antes de retirar
+    if (chave.status !== "Disponível") {
+        alert(`Erro: Esta chave já está ${chave.status}. Use a Devolução.`);
+        reiniciarScanner();
+        return;
+    }
+
+    // ATUALIZA NO FIREBASE (muda o status para Retirada por Nome do Colaborador)
+    db.collection("chaves").doc(chave.idDoc).update({
+        status: "Retirada por " + colab.nome
+    })
+    .then(() => {
+        salvarMovimentacao(chave, colab, "RETIRADA");
+        alert(`Sucesso! Chave ${chave.id} retirada por ${colab.nome}.`);
+        reiniciarScanner();
+    })
+    .catch(error => {
+        console.error("Erro ao retirar chave:", error);
+        alert("Erro ao retirar chave. Tente novamente.");
+    });
+}
+
+function confirmarDevolucao() {
+    if (!chaveSelecionada) return alert("Erro: Nenhuma chave foi escaneada.");
+    
+    const idCol = document.getElementById("idColRetirada").value.trim();
+    if (!idCol) return alert("Digite o ID do colaborador que está devolvendo.");
+
+    const colab = colaboradores.find(c => c.id === idCol);
+    if (!colab) return alert("Colaborador não encontrado.");
+
+    const chave = chaves.find(c => c.id === chaveSelecionada);
+    if (!chave) return alert("Chave não encontrada no sistema.");
+
+    // Verifica se a chave está RETIRADA (o status é diferente de Disponível)
+    if (chave.status === "Disponível") {
+        alert("Erro: Esta chave já está disponível.");
+        reiniciarScanner();
+        return;
+    }
+    
+    // Alerta se quem está devolvendo não é quem retirou (opcional)
+    if (!chave.status.includes(colab.nome)) {
+        if (!confirm(`Atenção: A chave foi retirada por ${chave.status.split(' por ')[1]}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
+            return;
+        }
+    }
+
+    // ATUALIZA NO FIREBASE (muda o status de volta para Disponível)
+    db.collection("chaves").doc(chave.idDoc).update({
+        status: "Disponível"
+    })
+    .then(() => {
+        salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
+        alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
+        reiniciarScanner();
+    })
+    .catch(error => {
+        console.error("Erro ao devolver chave:", error);
+        alert("Erro ao devolver chave. Tente novamente.");
+    });
+}
+// ====================================================================
+// FIM DAS FUNÇÕES DE RETIRADA E DEVOLUÇÃO
+// ====================================================================
+
+function salvarEdicao() {
+    const novoNome = document.getElementById("modalInput").value.trim();
+    if (!novoNome) return alert("Digite um nome válido.");
+
+    let colecao, idDoc, tipo;
+    
+    if (tipoEdicao === "chave") {
+        const chaveEditada = chaves[itemEditando];
+        colecao = "chaves";
+        idDoc = chaveEditada.idDoc;
+        tipo = "Chave";
+    } else {
+        const colabEditado = colaboradores[itemEditando];
+        colecao = "colaboradores";
+        idDoc = colabEditado.idDoc;
+        tipo = "Colaborador";
+    }
+
+    // ATUALIZA NO FIREBASE (doc().update)
+    db.collection(colecao).doc(idDoc).update({
+        nome: novoNome
+    })
+    .then(() => {
+        alert(`${tipo} atualizado para "${novoNome}".`);
+        const modalElement = document.getElementById("modalEditar");
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) modalInstance.hide();
+    })
+    .catch(error => {
+        console.error("Erro ao salvar edição:", error);
+        alert("Erro ao salvar edição.");
+    });
+}
+
+// ====================================================================
+// 3. FUNÇÕES UTILS (Renderização, QR Code, Scanner)
+// ====================================================================
+
+function showPage(page, event) {
+    if(event) event.preventDefault(); 
+
+    document.querySelectorAll("section").forEach(s => s.style.display = "none");
+    document.getElementById(page).style.display = "block";
+
+    document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
+    if(event) event.currentTarget.classList.add("activeMenu");
+    else document.querySelector(`.sidebar a[onclick*="${page}"]`).classList.add("activeMenu");
+
+    if (page === 'qr') {
+        if (!html5QrcodeScanner) {
+             html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: 200, 
+                    disableFlip: false,
+                    facingMode: "environment" 
+                }
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        } else {
+             html5QrcodeScanner.resume();
+        }
+        document.getElementById("areaConfirmacao").style.display = "none";
+        document.getElementById("chaveDetectada").innerText = "Nenhuma";
+    } else if (html5QrcodeScanner) {
+        try {
+            html5QrcodeScanner.pause();
+        } catch (e) {
+            console.warn("Scanner não conseguiu parar:", e);
+        }
+    }
+
+    if (page === 'colaboradores') {
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
+    }
+}
+
+function gerarQRCode(texto) {
+    let area = document.getElementById("qrCodeArea");
+    area.innerHTML = "";
+
+    const qrDiv = document.createElement('div');
+    qrDiv.id = 'qrcodeCanvas';
+    area.appendChild(qrDiv);
+
+    new QRCode(qrDiv, { text: texto, width: 200, height: 200, colorDark : "#fff", colorLight : "#1e1e1e", correctLevel : QRCode.CorrectLevel.H });
+
+    setTimeout(() => {
+        let canvas = qrDiv.querySelector("canvas");
+        if (canvas) {
+            let imgData = canvas.toDataURL("image/png");
+            let link = document.createElement("a");
+            link.href = imgData;
+            link.download = texto + "_QRCode.png";
+            link.innerText = "Baixar QR Code";
+            link.className = "btn btn-outline-light mt-3";
+            area.appendChild(link);
+        }
+    }, 100);
+}
+
+function filtrarChaves() {
+    let termo = document.getElementById("buscaChaves").value.toLowerCase();
+    
+    const chavesFiltradas = chaves
+        .filter(c => 
+            c.nome.toLowerCase().includes(termo) || 
+            c.id.toLowerCase().includes(termo) || 
+            c.status.toLowerCase().includes(termo)
+        );
+
+    renderizarChaves(chavesFiltradas);
+}
+
+function atualizarListas() {
+    // Estatísticas do Dashboard
+    const totalDisponiveis = chaves.filter(c => c.status === "Disponível").length;
+    const totalRetiradas = chaves.length - totalDisponiveis;
+
+    document.getElementById("totalChaves").innerText = chaves.length;
+    document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
+    document.getElementById("chavesRetiradas").innerText = totalRetiradas;
+    document.getElementById("totalCol").innerText = colaboradores.length;
+    document.getElementById("totalHist").innerText = historico.length;
+
+    // Lista de Chaves
+    renderizarChaves(chaves);
+
+    // Lista de Colaboradores
+    let colList = document.getElementById("listaColaboradores");
+    colList.innerHTML = "";
+    colaboradores.forEach((c, idx) => {
+        colList.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="abrirEdicao('colaborador', ${idx})">
+                        <i class="fa fa-edit"></i> Editar
+                    </button>
+                </td>
+            </tr>`;
+    });
+
+    // Lista de Histórico
+    let hist = document.getElementById("listaHistorico");
+    hist.innerHTML = "";
+    // O histórico já vem ordenado por dataTimestamp, apenas o renderiza
+    historico.forEach(h => {
+        const acaoClass = h.acao === 'RETIRADA' ? 'text-danger' : 'text-success';
+        hist.innerHTML += `
+            <tr>
+                <td>${h.chave}</td>
+                <td>${h.colaborador}</td>
+                <td class="${acaoClass}">${h.acao}</td>
+                <td>${h.data}</td>
+            </tr>`;
+    });
+}
+
+// ====================================================================
+// FUNÇÃO renderizarChaves CORRIGIDA (AGORA MOSTRA DEVOLVER NA TABELA)
+// ====================================================================
+function renderizarChaves(chavesParaExibir) {
+    let lista = document.getElementById("listaChaves");
+    lista.innerHTML = "";
+    chavesParaExibir.forEach((c, idx) => {
+        // Encontra o índice original no array 'chaves' para a edição
+        const indexOriginal = chaves.findIndex(item => item.id === c.id); 
+
+        let statusClass = c.status === "Disponível" ? 'badge text-bg-success' : 'badge text-bg-danger';
+
+        let acoesHtml = `
+            <button class="btn btn-sm btn-warning me-2" onclick="abrirEdicao('chave', ${indexOriginal})">
+                <i class="fa fa-edit"></i>
+            </button>`;
+
+        if (c.status === "Disponível") {
+            // Mostra o botão RETIRAR se a chave estiver disponível
+            acoesHtml += `
+                <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')">
+                    <i class="fa fa-arrow-right"></i> Retirar
+                </button>`;
+        } else {
+            // Mostra o botão DEVOLVER se a chave NÃO estiver disponível (estiver retirada)
+            acoesHtml += `
+                <button class="btn btn-sm btn-primary" onclick="iniciarDevolucaoRapida('${c.id}')">
+                    <i class="fa fa-reply"></i> Devolver
+                </button>`;
+        }
+
+
+        lista.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome}</td>
+                <td><span class="${statusClass}">${c.status}</span></td>
+                <td>${acoesHtml}</td>
+            </tr>`;
+    });
+}
+// ====================================================================
+// FIM DA FUNÇÃO renderizarChaves CORRIGIDA
+// ====================================================================
+
+function onScanSuccess(decodedText) {
+    try {
+        if (html5QrcodeScanner) html5QrcodeScanner.pause(true);
+    } catch (e) { }
+
+    const chave = chaves.find(c => c.id === decodedText);
+
+    if (!chave) {
+        document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
+        document.getElementById("areaConfirmacao").style.display = "none";
+        alert("QR Code lido, mas nenhuma chave correspondente foi encontrada no sistema.");
+        return;
+    }
+
+    chaveSelecionada = decodedText;
+    document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+    document.getElementById("areaConfirmacao").style.display = "block";
+
+    // Lógica CORRIGIDA para mostrar Retirar ou Devolver
+    if (chave.status === "Disponível") {
+        document.getElementById("btnConfirmarRetirada").style.display = "block";
+        document.getElementById("btnDevolverChave").style.display = "none";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
+    } else {
+        document.getElementById("btnConfirmarRetirada").style.display = "none";
+        document.getElementById("btnDevolverChave").style.display = "block";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
+    }
+
+    document.getElementById("idColRetirada").focus();
+}
+
+function onScanError(errorMessage) { }
+
+function reiniciarScanner() {
+    document.getElementById("idColRetirada").value = "";
+    chaveSelecionada = null;
+    document.getElementById("chaveDetectada").innerText = "Nenhuma";
+    document.getElementById("areaConfirmacao").style.display = "none";
+    if (html5QrcodeScanner) html5QrcodeScanner.resume(); 
+}
+
+function abrirEdicao(tipo, indice) {
+    tipoEdicao = tipo;
+    itemEditando = indice;
+
+    const modalLabel = document.getElementById("modalTitulo");
+    const input = document.getElementById("modalInput");
+
+    if (tipo === "chave") {
+        modalLabel.innerText = "Editar Nome da Chave";
+        input.value = chaves[indice].nome;
+    } else {
+        modalLabel.innerText = "Editar Nome do Colaborador";
+        input.value = colaboradores[indice].nome;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById("modalEditar"));
+    modal.show();
+}
+
+function iniciarRetiradaRapida(chaveId) {
+    showPage('qr');
+    const chave = chaves.find(c => c.id === chaveId);
+    if (chave) {
+        onScanSuccess(chaveId); 
+        alert(`Retirada Rápida: Confirme a retirada da chave ${chave.id} - ${chave.nome}.`);
+    }
+}
+
+// ====================================================================
+// NOVA FUNÇÃO: DEVOLUÇÃO RÁPIDA PELA TABELA
+// ====================================================================
+function iniciarDevolucaoRapida(chaveId) {
+    const chave = chaves.find(c => c.id === chaveId);
+    if (!chave) return;
+
+    let idCol = prompt(`Devolução Rápida para ${chave.id} - ${chave.nome}. Digite o ID do colaborador que está devolvendo:`);
+
+    if (idCol) {
+        idCol = idCol.trim();
+        const colab = colaboradores.find(c => c.id === idCol);
+
+        if (!colab) {
+            alert("Erro: Colaborador não encontrado.");
+            return;
+        }
+
+        // Se a chave não estiver disponível, procede com a devolução
+        if (chave.status !== "Disponível") {
+            // ATUALIZA NO FIREBASE
+            db.collection("chaves").doc(chave.idDoc).update({
+                status: "Disponível"
+            })
+            .then(() => {
+                salvarMovimentacao(chave, colab, "DEVOLUÇÃO (RÁPIDA)");
+                alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
+            })
+            .catch(error => {
+                console.error("Erro ao devolver chave (rápida):", error);
+                alert("Erro ao devolver chave. Tente novamente.");
+            });
+        } else {
+             alert("Erro: Esta chave já está disponível.");
+        }
+    }
+}
+// ====================================================================
+// FIM DA NOVA FUNÇÃO
+// ====================================================================
+
+
+function gerarRelatorioHistorico() {
+    if (historico.length === 0) {
+        return alert("Não há registros no histórico para gerar o relatório.");
+    }
+
+    const headers = ["Chave (ID)", "Colaborador", "Acao", "Data"];
+
+    const rows = historico.map(item => [
+        item.chave,
+        item.colaborador.replace(/,/g, ''), 
+        item.acao,
+        item.data
+    ]);
+
+    const csvContent = [
+        headers.join(";"), 
+        ...rows.map(e => e.join(";"))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'relatorio_movimentacao_chaves_' + new Date().toISOString().slice(0, 10) + '.csv');
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert("Relatório CSV gerado com sucesso! Verifique sua pasta de downloads.");
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
