@@ -189,6 +189,44 @@
         .status-retirada {
             color: #f44336;
         }
+        .offline-indicator {
+            background: #ff4444;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .online-indicator {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .sync-status {
+            background: #ff9800;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .pending-sync {
+            background: #ff9800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
     </style>
 </head>
 
@@ -203,10 +241,22 @@
     <a href="#" onclick="showPage('colaboradores', event)"><i class="fa fa-users"></i> Colaboradores</a>
     <a href="#" onclick="showPage('historico', event)"><i class="fa fa-clock-rotate-left"></i> Histórico</a>
     <a href="#" onclick="showPage('qr', event)"><i class="fa fa-qrcode"></i> Retirar por QR Code</a>
+    <a href="#" onclick="showPage('offline', event)"><i class="fa fa-cloud"></i> Dados Offline</a>
 </div>
 
 <div class="content-wrapper"> 
     <div class="content">
+
+        <!-- Indicadores de Status de Conexão -->
+        <div id="onlineIndicator" class="online-indicator">
+            <i class="fa fa-wifi"></i> Conectado - Dados sincronizados
+        </div>
+        <div id="offlineIndicator" class="offline-indicator">
+            <i class="fa fa-wifi-slash"></i> Modo Offline - Dados serão sincronizados quando a conexão voltar
+        </div>
+        <div id="syncStatus" class="sync-status">
+            <i class="fa fa-refresh fa-spin"></i> Sincronizando dados pendentes...
+        </div>
 
         <section id="home">
             <h1 class="mb-4">🔑 Sistema de Gestão de Chaves</h1>
@@ -232,7 +282,8 @@
                 <div class="col-md-4 mb-3">
                     <div class="card p-4">
                         <h3><i class="fa fa-clock-rotate-left text-success"></i> Histórico</h3>
-                        <p>Registros: <span id="totalHist" class="fw-bold">0</span></p>
+                        <p>Total: <span id="totalHist" class="fw-bold">0</span></p>
+                        <p class="mb-0">Pendentes: <span id="pendentesSync" class="fw-bold text-warning">0</span></p>
                     </div>
                 </div>
             </div>
@@ -314,6 +365,9 @@
                 <button class="btn btn-success mt-2" onclick="gerarRelatorioHistorico()">
                     <i class="fa fa-download"></i> Baixar Relatório Completo (CSV)
                 </button>
+                <button class="btn btn-warning mt-2 ms-2" onclick="sincronizarDadosPendentes()">
+                    <i class="fa fa-refresh"></i> Sincronizar Dados Pendentes
+                </button>
             </div>
 
             <div class="card mt-3 p-3">
@@ -325,6 +379,7 @@
                                 <th>Colaborador</th>
                                 <th>Ação</th>
                                 <th>Data</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="listaHistorico"></tbody>
@@ -372,11 +427,71 @@
             </div>
         </section>
 
+        <section id="offline" style="display:none;">
+            <h2><i class="fa fa-cloud text-warning"></i> Gerenciamento de Dados Offline</h2>
+            <hr/>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card p-4">
+                        <h4><i class="fa fa-database"></i> Status de Sincronização</h4>
+                        <p><strong>Status da Conexão:</strong> 
+                            <span id="statusConexao" class="badge bg-success">Online</span>
+                        </p>
+                        <p><strong>Movimentações Pendentes:</strong> 
+                            <span id="contadorPendentes" class="fw-bold text-warning">0</span>
+                        </p>
+                        <p><strong>Última Sincronização:</strong> 
+                            <span id="ultimaSync" class="fw-bold">Nunca</span>
+                        </p>
+                        
+                        <button class="btn btn-warning w-100 mt-3" onclick="sincronizarDadosPendentes()">
+                            <i class="fa fa-refresh"></i> Sincronizar Agora
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="card p-4">
+                        <h4><i class="fa fa-info-circle"></i> Informações Offline</h4>
+                        <p>O sistema funciona mesmo sem internet. As movimentações são salvas localmente e sincronizadas automaticamente quando a conexão voltar.</p>
+                        
+                        <div class="alert alert-info mt-3">
+                            <small>
+                                <strong>Dicas:</strong><br>
+                                • Todas as operações funcionam offline<br>
+                                • Os dados são sincronizados automaticamente<br>
+                                • O histórico mostra o status de cada registro
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 p-4">
+                <h4>Movimentações Pendentes de Sincronização</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>Chave</th>
+                                <th>Colaborador</th>
+                                <th>Ação</th>
+                                <th>Data Local</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaPendentes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     </div> 
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 1.4.0 (Scanner Corrigido + UX Melhorada)</p>
+        <p>Versão 2.0.0 (Funcionalidade Offline + Sincronização)</p>
     </footer>
 
 </div> 
@@ -404,13 +519,14 @@
 
 <script>
 // ============================================================
-//                    SCRIPT DO SISTEMA (com Firebase)
+//                    SCRIPT DO SISTEMA (com Firebase + Offline)
 // ============================================================
 
 // Variáveis Globais
 let chaves = [];
 let colaboradores = [];
 let historico = [];
+let historicoPendente = [];
 let contadorChave = 0; 
 let contadorColaborador = 0;
 let itemEditando = null;
@@ -420,6 +536,7 @@ let html5QrcodeScanner = null;
 let db = null; 
 let scannerAtivo = false;
 let scannerPausado = false;
+let isOnline = true;
 
 /* ==================================
     CONFIGURAÇÃO DO FIREBASE
@@ -438,12 +555,239 @@ function iniciarSistema() {
     const app = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
 
+    // Configura detecção de conectividade
+    configurarDetecaoConexao();
+
+    // Carrega dados pendentes do localStorage
+    carregarDadosOffline();
+
     // Inicia os listeners (carregamento em tempo real do Firebase)
     carregarChavesFirebase();
     carregarColaboradoresFirebase();
     carregarHistoricoFirebase();
 
     document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
+
+    // Tenta sincronizar dados pendentes ao iniciar
+    setTimeout(sincronizarDadosPendentes, 2000);
+}
+
+// ====================================================================
+// FUNCIONALIDADE OFFLINE
+// ====================================================================
+
+function configurarDetecaoConexao() {
+    // Verifica status inicial
+    isOnline = navigator.onLine;
+    atualizarStatusConexao();
+
+    // Listeners para mudanças de conexão
+    window.addEventListener('online', function() {
+        isOnline = true;
+        atualizarStatusConexao();
+        sincronizarDadosPendentes();
+    });
+
+    window.addEventListener('offline', function() {
+        isOnline = false;
+        atualizarStatusConexao();
+    });
+}
+
+function atualizarStatusConexao() {
+    const onlineIndicator = document.getElementById('onlineIndicator');
+    const offlineIndicator = document.getElementById('offlineIndicator');
+    const statusConexao = document.getElementById('statusConexao');
+
+    if (isOnline) {
+        onlineIndicator.style.display = 'block';
+        offlineIndicator.style.display = 'none';
+        statusConexao.textContent = 'Online';
+        statusConexao.className = 'badge bg-success';
+    } else {
+        onlineIndicator.style.display = 'none';
+        offlineIndicator.style.display = 'block';
+        statusConexao.textContent = 'Offline';
+        statusConexao.className = 'badge bg-danger';
+    }
+}
+
+function carregarDadosOffline() {
+    // Carrega histórico pendente do localStorage
+    const pendentesSalvos = localStorage.getItem('historicoPendente');
+    if (pendentesSalvos) {
+        historicoPendente = JSON.parse(pendentesSalvos);
+    }
+
+    // Carrega última sincronização
+    const ultimaSync = localStorage.getItem('ultimaSincronizacao');
+    if (ultimaSync) {
+        document.getElementById('ultimaSync').textContent = new Date(ultimaSync).toLocaleString('pt-BR');
+    }
+
+    atualizarContadoresOffline();
+}
+
+function salvarDadosOffline() {
+    // Salva histórico pendente no localStorage
+    localStorage.setItem('historicoPendente', JSON.stringify(historicoPendente));
+    atualizarContadoresOffline();
+}
+
+function atualizarContadoresOffline() {
+    document.getElementById('contadorPendentes').textContent = historicoPendente.length;
+    document.getElementById('pendentesSync').textContent = historicoPendente.length;
+    atualizarListaPendentes();
+}
+
+function adicionarMovimentacaoOffline(chave, colaborador, acao) {
+    const movimentacao = {
+        id: Date.now().toString(), // ID único baseado no timestamp
+        chave: chave.id,
+        nomeChave: chave.nome,
+        colaborador: colaborador.nome,
+        idColaborador: colaborador.id,
+        acao: acao,
+        data: new Date().toLocaleString('pt-BR'),
+        dataTimestamp: new Date().toISOString(),
+        sincronizado: false
+    };
+
+    historicoPendente.push(movimentacao);
+    salvarDadosOffline();
+
+    // Atualiza o status da chave localmente (offline)
+    if (isOnline) {
+        // Se estiver online, tenta sincronizar imediatamente
+        sincronizarMovimentacao(movimentacao);
+    } else {
+        // Se estiver offline, atualiza apenas localmente
+        atualizarStatusChaveLocal(chave, colaborador, acao);
+    }
+
+    return movimentacao;
+}
+
+function atualizarStatusChaveLocal(chave, colaborador, acao) {
+    const chaveIndex = chaves.findIndex(c => c.id === chave.id);
+    if (chaveIndex !== -1) {
+        if (acao === "RETIRADA") {
+            chaves[chaveIndex].status = "Retirada por " + colaborador.nome + " (Offline)";
+        } else if (acao === "DEVOLUÇÃO") {
+            chaves[chaveIndex].status = "Disponível (Offline)";
+        }
+        atualizarListas();
+    }
+}
+
+async function sincronizarDadosPendentes() {
+    if (!isOnline) {
+        console.log("Sem conexão para sincronizar");
+        return;
+    }
+
+    if (historicoPendente.length === 0) {
+        console.log("Nenhum dado pendente para sincronizar");
+        return;
+    }
+
+    document.getElementById('syncStatus').style.display = 'block';
+    
+    let sucessos = 0;
+    let erros = 0;
+
+    for (let i = historicoPendente.length - 1; i >= 0; i--) {
+        const movimentacao = historicoPendente[i];
+        
+        if (await sincronizarMovimentacao(movimentacao)) {
+            sucessos++;
+        } else {
+            erros++;
+            break; // Para na primeira erro para evitar perda de dados
+        }
+    }
+
+    document.getElementById('syncStatus').style.display = 'none';
+    
+    if (erros === 0) {
+        localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
+        document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
+        
+        if (sucessos > 0) {
+            alert(`✅ ${sucessos} movimentação(ões) sincronizada(s) com sucesso!`);
+        }
+    } else {
+        alert(`⚠️ ${sucessos} sincronizadas, ${erros} com erro. Tentando novamente mais tarde.`);
+    }
+}
+
+async function sincronizarMovimentacao(movimentacao) {
+    try {
+        // 1. Salva no histórico do Firebase
+        await db.collection("historico").add({
+            chave: movimentacao.chave,
+            colaborador: movimentacao.colaborador,
+            acao: movimentacao.acao,
+            data: movimentacao.data,
+            dataTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. Atualiza o status da chave no Firebase
+        const chave = chaves.find(c => c.id === movimentacao.chave);
+        if (chave) {
+            if (movimentacao.acao === "RETIRADA") {
+                await db.collection("chaves").doc(chave.idDoc).update({
+                    status: "Retirada por " + movimentacao.colaborador
+                });
+            } else if (movimentacao.acao === "DEVOLUÇÃO") {
+                await db.collection("chaves").doc(chave.idDoc).update({
+                    status: "Disponível"
+                });
+            }
+        }
+
+        // 3. Remove da lista de pendentes
+        historicoPendente = historicoPendente.filter(m => m.id !== movimentacao.id);
+        salvarDadosOffline();
+        
+        return true;
+    } catch (error) {
+        console.error("Erro ao sincronizar movimentação:", error);
+        return false;
+    }
+}
+
+function atualizarListaPendentes() {
+    const lista = document.getElementById('listaPendentes');
+    lista.innerHTML = '';
+
+    historicoPendente.forEach(movimentacao => {
+        const acaoClass = movimentacao.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+        lista.innerHTML += `
+            <tr>
+                <td>${movimentacao.chave} - ${movimentacao.nomeChave}</td>
+                <td>${movimentacao.colaborador}</td>
+                <td class="${acaoClass}">${movimentacao.acao}</td>
+                <td>${movimentacao.data}</td>
+                <td>
+                    <span class="pending-sync">Pendente</span>
+                    <button class="btn btn-sm btn-warning ms-2" onclick="tentarSincronizarUnico('${movimentacao.id}')">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
+}
+
+async function tentarSincronizarUnico(id) {
+    const movimentacao = historicoPendente.find(m => m.id === id);
+    if (movimentacao) {
+        if (await sincronizarMovimentacao(movimentacao)) {
+            alert('Movimentação sincronizada com sucesso!');
+        } else {
+            alert('Erro ao sincronizar. Verifique a conexão.');
+        }
+    }
 }
 
 // ====================================================================
@@ -495,16 +839,24 @@ function carregarHistoricoFirebase() {
 // ====================================================================
 
 function salvarMovimentacao(chave, colaborador, acao) {
-    db.collection("historico").add({
-        chave: chave.id,
-        colaborador: colaborador.nome,
-        acao: acao,
-        data: new Date().toLocaleString('pt-BR'),
-        dataTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
-    })
-    .catch(error => {
-        console.error("Erro ao salvar histórico:", error);
-    });
+    if (isOnline) {
+        // Online: salva diretamente no Firebase
+        db.collection("historico").add({
+            chave: chave.id,
+            colaborador: colaborador.nome,
+            acao: acao,
+            data: new Date().toLocaleString('pt-BR'),
+            dataTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
+        })
+        .catch(error => {
+            console.error("Erro ao salvar histórico:", error);
+            // Se falhar, salva offline
+            adicionarMovimentacaoOffline(chave, colaborador, acao);
+        });
+    } else {
+        // Offline: salva localmente
+        adicionarMovimentacaoOffline(chave, colaborador, acao);
+    }
 }
 
 function cadastrarChave() {
@@ -552,7 +904,7 @@ function cadastrarColaborador() {
 }
 
 // ====================================================================
-// FUNÇÕES DE RETIRADA E DEVOLUÇÃO (CORRIGIDAS)
+// FUNÇÕES DE RETIRADA E DEVOLUÇÃO (COM SUPORTE OFFLINE)
 // ====================================================================
 
 function validarIdColaborador(idCol) {
@@ -585,26 +937,35 @@ function confirmarRetirada() {
     }
 
     // Verificação de status melhorada
-    if (chave.status !== "Disponível") {
+    if (chave.status !== "Disponível" && !chave.status.includes("Offline")) {
         alert(`Erro: Esta chave já está ${chave.status}. Use a opção de Devolução.`);
         reiniciarScanner();
         return;
     }
 
-    // ATUALIZA NO FIREBASE
-    db.collection("chaves").doc(chave.idDoc).update({
-        status: "Retirada por " + colab.nome
-    })
-    .then(() => {
-        salvarMovimentacao(chave, colab, "RETIRADA");
-        alert(`Sucesso! Chave ${chave.id} retirada por ${colab.nome}.`);
+    if (isOnline) {
+        // Online: atualiza diretamente no Firebase
+        db.collection("chaves").doc(chave.idDoc).update({
+            status: "Retirada por " + colab.nome
+        })
+        .then(() => {
+            salvarMovimentacao(chave, colab, "RETIRADA");
+            alert(`Sucesso! Chave ${chave.id} retirada por ${colab.nome}.`);
+            reiniciarScanner();
+        })
+        .catch(error => {
+            console.error("Erro ao retirar chave:", error);
+            // Se falhar, tenta modo offline
+            const movimentacao = adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+            alert(`✅ Retirada registrada offline! Será sincronizada automaticamente.`);
+            reiniciarScanner();
+        });
+    } else {
+        // Offline: salva localmente
+        const movimentacao = adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+        alert(`✅ Retirada registrada offline! (ID: ${movimentacao.id})\nSerá sincronizada quando a conexão voltar.`);
         reiniciarScanner();
-    })
-    .catch(error => {
-        console.error("Erro ao retirar chave:", error);
-        alert("Erro ao retirar chave. Tente novamente.");
-        retomarScanner();
-    });
+    }
 }
 
 function confirmarDevolucao() {
@@ -630,34 +991,47 @@ function confirmarDevolucao() {
     }
 
     // Verificação de status melhorada
-    if (chave.status === "Disponível") {
+    if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
         alert("Erro: Esta chave já está disponível.");
         reiniciarScanner();
         return;
     }
     
     // Alerta se quem está devolvendo não é quem retirou
-    if (!chave.status.includes(colab.nome)) {
-        if (!confirm(`Atenção: A chave foi retirada por ${chave.status.split(' por ')[1]}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
+    const nomeQuemRetirou = chave.status.replace("Retirada por ", "").replace(" (Offline)", "");
+    if (!chave.status.includes(colab.nome) && nomeQuemRetirou !== colab.nome) {
+        if (!confirm(`Atenção: A chave foi retirada por ${nomeQuemRetirou}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
             return;
         }
     }
 
-    // ATUALIZA NO FIREBASE
-    db.collection("chaves").doc(chave.idDoc).update({
-        status: "Disponível"
-    })
-    .then(() => {
-        salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
-        alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
+    if (isOnline) {
+        // Online: atualiza diretamente no Firebase
+        db.collection("chaves").doc(chave.idDoc).update({
+            status: "Disponível"
+        })
+        .then(() => {
+            salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
+            alert(`Sucesso! Chave ${chave.id} devolvida por ${colab.nome}.`);
+            reiniciarScanner();
+        })
+        .catch(error => {
+            console.error("Erro ao devolver chave:", error);
+            // Se falhar, tenta modo offline
+            const movimentacao = adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+            alert(`✅ Devolução registrada offline! Será sincronizada automaticamente.`);
+            reiniciarScanner();
+        });
+    } else {
+        // Offline: salva localmente
+        const movimentacao = adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+        alert(`✅ Devolução registrada offline! (ID: ${movimentacao.id})\nSerá sincronizada quando a conexão voltar.`);
         reiniciarScanner();
-    })
-    .catch(error => {
-        console.error("Erro ao devolver chave:", error);
-        alert("Erro ao devolver chave. Tente novamente.");
-        retomarScanner();
-    });
+    }
 }
+
+// ... (o restante do código permanece igual, incluindo as funções do scanner, renderização, etc.)
+// [O código continua com as funções restantes que não foram modificadas]
 
 function salvarEdicao() {
     const novoNome = document.getElementById("modalInput").value.trim();
@@ -715,6 +1089,10 @@ function showPage(page, event) {
 
     if (page === 'colaboradores') {
         document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
+    }
+
+    if (page === 'offline') {
+        atualizarListaPendentes();
     }
 }
 
@@ -837,7 +1215,7 @@ function onScanSuccess(decodedText) {
     document.getElementById("areaConfirmacao").style.display = "block";
 
     // Lógica CORRIGIDA para mostrar Retirar ou Devolver
-    const isDisponivel = chave.status === "Disponível";
+    const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
     
     document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
     document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
@@ -911,14 +1289,16 @@ function filtrarChaves() {
 
 function atualizarListas() {
     // Estatísticas do Dashboard
-    const totalDisponiveis = chaves.filter(c => c.status === "Disponível").length;
+    const totalDisponiveis = chaves.filter(c => 
+        c.status === "Disponível" || c.status === "Disponível (Offline)"
+    ).length;
     const totalRetiradas = chaves.length - totalDisponiveis;
 
     document.getElementById("totalChaves").innerText = chaves.length;
     document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
     document.getElementById("chavesRetiradas").innerText = totalRetiradas;
     document.getElementById("totalCol").innerText = colaboradores.length;
-    document.getElementById("totalHist").innerText = historico.length;
+    document.getElementById("totalHist").innerText = historico.length + historicoPendente.length;
 
     // Lista de Chaves
     renderizarChaves(chaves);
@@ -942,14 +1322,22 @@ function atualizarListas() {
     // Lista de Histórico
     let hist = document.getElementById("listaHistorico");
     hist.innerHTML = "";
-    historico.forEach(h => {
+    
+    // Combina histórico online com pendentes para exibição
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+    
+    todosRegistros.forEach(h => {
         const acaoClass = h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+        const status = h.sincronizado === false ? '<span class="pending-sync">Pendente</span>' : '<span class="badge bg-success">Sincronizado</span>';
+        
         hist.innerHTML += `
             <tr>
                 <td>${h.chave}</td>
                 <td>${h.colaborador}</td>
                 <td class="${acaoClass}">${h.acao}</td>
                 <td>${h.data}</td>
+                <td>${status}</td>
             </tr>`;
     });
 }
@@ -960,15 +1348,16 @@ function renderizarChaves(chavesParaExibir) {
     chavesParaExibir.forEach((c, idx) => {
         const indexOriginal = chaves.findIndex(item => item.id === c.id); 
 
-        const statusClass = c.status === "Disponível" ? 'status-disponivel' : 'status-retirada';
-        const statusBadgeClass = c.status === "Disponível" ? 'badge text-bg-success' : 'badge text-bg-danger';
+        const isOffline = c.status.includes("Offline");
+        const statusClass = c.status.includes("Disponível") ? 'status-disponivel' : 'status-retirada';
+        const statusBadgeClass = c.status.includes("Disponível") ? 'badge text-bg-success' : 'badge text-bg-danger';
 
         let acoesHtml = `
             <button class="btn btn-sm btn-warning me-2" onclick="abrirEdicao('chave', ${indexOriginal})">
                 <i class="fa fa-edit"></i>
             </button>`;
 
-        if (c.status === "Disponível") {
+        if (c.status.includes("Disponível")) {
             acoesHtml += `
                 <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')">
                     <i class="fa fa-arrow-right"></i> Retirar
@@ -980,11 +1369,13 @@ function renderizarChaves(chavesParaExibir) {
                 </button>`;
         }
 
+        const offlineBadge = isOffline ? ' <span class="badge bg-warning">Offline</span>' : '';
+
         lista.innerHTML += `
             <tr>
                 <td>${c.id}</td>
                 <td>${c.nome}</td>
-                <td><span class="${statusBadgeClass} ${statusClass}">${c.status}</span></td>
+                <td><span class="${statusBadgeClass} ${statusClass}">${c.status}</span>${offlineBadge}</td>
                 <td>${acoesHtml}</td>
             </tr>`;
     });
@@ -1046,10 +1437,15 @@ function abrirEdicao(tipo, indexOriginal) {
 // Funções do Relatório
 function gerarRelatorioHistorico() {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Chave ID,Colaborador,Acao,Data\n";
+    csvContent += "Chave ID,Colaborador,Acao,Data,Status\n";
 
-    historico.forEach(h => {
-        let row = `${h.chave},"${h.colaborador}",${h.acao},${h.data}\n`;
+    // Combina histórico online com pendentes
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+
+    todosRegistros.forEach(h => {
+        const status = h.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        let row = `${h.chave},"${h.colaborador}",${h.acao},${h.data},${status}\n`;
         csvContent += row;
     });
 
