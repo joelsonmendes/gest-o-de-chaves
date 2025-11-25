@@ -227,6 +227,70 @@
             font-size: 0.8em;
             margin-left: 5px;
         }
+        
+        /* =======================================
+            ESTILOS PARA A PÁGINA DE QR CODES
+            ======================================= */
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .qr-card {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #444;
+            transition: transform 0.2s;
+        }
+        .qr-card:hover {
+            transform: translateY(-5px);
+            border-color: #fd790d;
+        }
+        .qr-card canvas {
+            margin: 0 auto;
+        }
+        .qr-info {
+            margin-top: 15px;
+        }
+        .qr-info h5 {
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        .qr-info .status {
+            font-size: 0.9em;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .status-disponivel-badge {
+            background: #4CAF50;
+            color: white;
+        }
+        .status-retirada-badge {
+            background: #f44336;
+            color: white;
+        }
+        
+        /* =======================================
+            ESTILOS PARA RELATÓRIOS
+            ======================================= */
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .report-card {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 
@@ -239,8 +303,10 @@
     <a href="#" onclick="showPage('home', event)" class="activeMenu"><i class="fa fa-home"></i> Home</a>
     <a href="#" onclick="showPage('chaves', event)"><i class="fa fa-key"></i> Chaves</a>
     <a href="#" onclick="showPage('colaboradores', event)"><i class="fa fa-users"></i> Colaboradores</a>
+    <a href="#" onclick="showPage('qr-codes', event)"><i class="fa fa-qrcode"></i> Todos QR Codes</a>
     <a href="#" onclick="showPage('historico', event)"><i class="fa fa-clock-rotate-left"></i> Histórico</a>
-    <a href="#" onclick="showPage('qr', event)"><i class="fa fa-qrcode"></i> Retirar por QR Code</a>
+    <a href="#" onclick="showPage('qr', event)"><i class="fa fa-camera"></i> Retirar por QR Code</a>
+    <a href="#" onclick="showPage('relatorios', event)"><i class="fa fa-chart-bar"></i> Relatórios</a>
     <a href="#" onclick="showPage('offline', event)"><i class="fa fa-cloud"></i> Dados Offline</a>
 </div>
 
@@ -356,6 +422,29 @@
             </div>
         </section>
 
+        <section id="qr-codes" style="display:none;">
+            <h2><i class="fa fa-qrcode text-info"></i> Todos os QR Codes das Chaves</h2>
+            <hr/>
+            
+            <div class="card p-4">
+                <h4>QR Codes para Impressão</h4>
+                <p class="text-muted">Todos os QR codes das chaves cadastradas no sistema. Clique em "Baixar" para salvar individualmente.</p>
+                
+                <div class="mb-3">
+                    <button class="btn btn-success" onclick="baixarTodosQRCodes()">
+                        <i class="fa fa-download"></i> Baixar Todos os QR Codes (ZIP)
+                    </button>
+                    <button class="btn btn-info ms-2" onclick="imprimirQRCodes()">
+                        <i class="fa fa-print"></i> Imprimir Todos
+                    </button>
+                </div>
+                
+                <div id="qrCodesContainer" class="qr-grid">
+                    <!-- Os QR Codes serão gerados aqui -->
+                </div>
+            </div>
+        </section>
+
         <section id="historico" style="display:none;">
             <h2><i class="fa fa-clock-rotate-left text-success"></i> Histórico de Movimentações</h2>
             <hr/>
@@ -427,6 +516,95 @@
             </div>
         </section>
 
+        <section id="relatorios" style="display:none;">
+            <h2><i class="fa fa-chart-bar text-warning"></i> Relatórios do Sistema</h2>
+            <hr/>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card report-card p-4 h-100" onclick="gerarRelatorioChaves()">
+                        <div class="text-center">
+                            <i class="fa fa-key fa-3x text-info mb-3"></i>
+                            <h4>Relatório de Chaves</h4>
+                            <p class="text-muted">Lista completa de todas as chaves cadastradas com seus status atualizados</p>
+                            <button class="btn btn-info w-100">
+                                <i class="fa fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card report-card p-4 h-100" onclick="gerarRelatorioColaboradores()">
+                        <div class="text-center">
+                            <i class="fa fa-users fa-3x text-warning mb-3"></i>
+                            <h4>Relatório de Colaboradores</h4>
+                            <p class="text-muted">Lista completa de todos os colaboradores cadastrados no sistema</p>
+                            <button class="btn btn-warning w-100">
+                                <i class="fa fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card report-card p-4 h-100" onclick="gerarRelatorioHistorico()">
+                        <div class="text-center">
+                            <i class="fa fa-history fa-3x text-success mb-3"></i>
+                            <h4>Relatório de Histórico</h4>
+                            <p class="text-muted">Histórico completo de todas as movimentações do sistema</p>
+                            <button class="btn btn-success w-100">
+                                <i class="fa fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card report-card p-4 h-100" onclick="gerarRelatorioCompleto()">
+                        <div class="text-center">
+                            <i class="fa fa-file-alt fa-3x text-primary mb-3"></i>
+                            <h4>Relatório Completo</h4>
+                            <p class="text-muted">Relatório consolidado com todos os dados do sistema</p>
+                            <button class="btn btn-primary w-100">
+                                <i class="fa fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 p-4">
+                <h4>Estatísticas do Sistema</h4>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="card bg-dark p-3">
+                            <h3 id="statChavesTotal">0</h3>
+                            <p class="mb-0">Total de Chaves</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-dark p-3">
+                            <h3 id="statChavesDisponiveis">0</h3>
+                            <p class="mb-0">Chaves Disponíveis</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-dark p-3">
+                            <h3 id="statColaboradoresTotal">0</h3>
+                            <p class="mb-0">Colaboradores</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-dark p-3">
+                            <h3 id="statMovimentacoesTotal">0</h3>
+                            <p class="mb-0">Movimentações</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="offline" style="display:none;">
             <h2><i class="fa fa-cloud text-warning"></i> Gerenciamento de Dados Offline</h2>
             <hr/>
@@ -491,11 +669,32 @@
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 2.0.0 (Funcionalidade Offline + Sincronização)</p>
+        <p>Versão 3.1.0 (Relatórios Corrigidos + Caracteres UTF-8)</p>
     </footer>
 
 </div> 
 
+<!-- Modal para Confirmação de Exclusão -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="mensagemExclusao">Tem certeza que deseja excluir este colaborador?</p>
+                <p class="text-warning"><strong>Atenção:</strong> Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Edição -->
 <div class="modal fade" id="modalEditar" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content bg-dark text-white">
@@ -519,7 +718,7 @@
 
 <script>
 // ============================================================
-//                    SCRIPT DO SISTEMA (com Firebase + Offline)
+//                    SCRIPT DO SISTEMA (com Firebase + Offline + Novas Funcionalidades)
 // ============================================================
 
 // Variáveis Globais
@@ -537,6 +736,7 @@ let db = null;
 let scannerAtivo = false;
 let scannerPausado = false;
 let isOnline = true;
+let colaboradorParaExcluir = null;
 
 /* ==================================
     CONFIGURAÇÃO DO FIREBASE
@@ -567,21 +767,267 @@ function iniciarSistema() {
     carregarHistoricoFirebase();
 
     document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
+    document.getElementById("btnConfirmarExclusao").addEventListener("click", confirmarExclusaoColaborador);
 
     // Tenta sincronizar dados pendentes ao iniciar
     setTimeout(sincronizarDadosPendentes, 2000);
 }
 
 // ====================================================================
-// FUNCIONALIDADE OFFLINE
+// FUNÇÕES DE RELATÓRIOS CORRIGIDAS (UTF-8)
+// ====================================================================
+
+function gerarRelatorioChaves() {
+    // Cria o conteúdo CSV com BOM para UTF-8
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID da Chave,Nome da Chave,Status,Data de Cadastro\n";
+
+    chaves.forEach(chave => {
+        // Remove caracteres problemáticos e formata corretamente
+        const nomeChave = limparTextoCSV(chave.nome);
+        const statusChave = limparTextoCSV(chave.status);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
+
+    criarDownloadCSV(csvContent, `relatorio_chaves_${formatarDataArquivo()}.csv`);
+    alert("Relatório de chaves gerado com sucesso!");
+}
+
+function gerarRelatorioColaboradores() {
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID do Colaborador,Nome do Colaborador,Data de Cadastro\n";
+
+    colaboradores.forEach(colaborador => {
+        const nomeColaborador = limparTextoCSV(colaborador.nome);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `${colaborador.id},"${nomeColaborador}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
+
+    criarDownloadCSV(csvContent, `relatorio_colaboradores_${formatarDataArquivo()}.csv`);
+    alert("Relatório de colaboradores gerado com sucesso!");
+}
+
+function gerarRelatorioHistorico() {
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID da Chave,Nome do Colaborador,Ação,Data,Status\n";
+
+    // Combina histórico online com pendentes
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+
+    todosRegistros.forEach(registro => {
+        const nomeColaborador = limparTextoCSV(registro.colaborador);
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        
+        let row = `${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}","${status}"\n`;
+        csvContent += row;
+    });
+
+    criarDownloadCSV(csvContent, `relatorio_historico_${formatarDataArquivo()}.csv`);
+    alert("Relatório de histórico gerado com sucesso!");
+}
+
+function gerarRelatorioCompleto() {
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "Tipo,ID,Nome,Status,Data\n";
+
+    // Adiciona chaves
+    chaves.forEach(chave => {
+        const nomeChave = limparTextoCSV(chave.nome);
+        const statusChave = limparTextoCSV(chave.status);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `Chave,${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
+
+    // Adiciona colaboradores
+    colaboradores.forEach(colaborador => {
+        const nomeColaborador = limparTextoCSV(colaborador.nome);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `Colaborador,${colaborador.id},"${nomeColaborador}","Ativo","${dataCadastro}"\n`;
+        csvContent += row;
+    });
+
+    // Adiciona histórico
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.forEach(registro => {
+        const nomeColaborador = limparTextoCSV(registro.colaborador);
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        
+        let row = `Movimentação,${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}"\n`;
+        csvContent += row;
+    });
+
+    criarDownloadCSV(csvContent, `relatorio_completo_${formatarDataArquivo()}.csv`);
+    alert("Relatório completo gerado com sucesso!");
+}
+
+// Funções auxiliares para formatação correta do CSV
+function limparTextoCSV(texto) {
+    if (!texto) return '';
+    
+    // Remove caracteres problemáticos para CSV
+    return texto.toString()
+        .replace(/"/g, '""') // Escapa aspas duplas
+        .replace(/\n/g, ' ') // Remove quebras de linha
+        .replace(/\r/g, ' ') // Remove carriage return
+        .replace(/\t/g, ' ') // Remove tabs
+        .trim();
+}
+
+function formatarDataArquivo() {
+    const data = new Date();
+    return data.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+}
+
+function criarDownloadCSV(csvContent, nomeArquivo) {
+    // Cria blob com encoding UTF-8
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Cria link de download
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", nomeArquivo);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ====================================================================
+// NOVAS FUNCIONALIDADES: PÁGINA DE QR CODES
+// ====================================================================
+
+function gerarTodosQRCodes() {
+    const container = document.getElementById('qrCodesContainer');
+    container.innerHTML = '';
+
+    chaves.forEach(chave => {
+        const qrCard = document.createElement('div');
+        qrCard.className = 'qr-card';
+        
+        const qrDiv = document.createElement('div');
+        qrDiv.id = `qr-${chave.id}`;
+        
+        const qrInfo = document.createElement('div');
+        qrInfo.className = 'qr-info';
+        
+        const statusClass = chave.status.includes('Disponível') ? 'status-disponivel-badge' : 'status-retirada-badge';
+        
+        qrInfo.innerHTML = `
+            <h5>${chave.id}</h5>
+            <p class="text-muted">${chave.nome}</p>
+            <span class="status ${statusClass}">${chave.status}</span>
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-light" onclick="baixarQRCodeIndividual('${chave.id}')">
+                    <i class="fa fa-download"></i> Baixar
+                </button>
+            </div>
+        `;
+        
+        qrCard.appendChild(qrDiv);
+        qrCard.appendChild(qrInfo);
+        container.appendChild(qrCard);
+        
+        // Gera o QR Code
+        new QRCode(qrDiv, {
+            text: chave.id,
+            width: 150,
+            height: 150,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    });
+}
+
+function baixarQRCodeIndividual(chaveId) {
+    const chave = chaves.find(c => c.id === chaveId);
+    if (!chave) return;
+    
+    const qrDiv = document.getElementById(`qr-${chaveId}`);
+    const canvas = qrDiv.querySelector('canvas');
+    
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = `QRCode_${chaveId}_${chave.nome}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+}
+
+function baixarTodosQRCodes() {
+    alert("Funcionalidade de download em lote será implementada em breve!");
+    // Em uma implementação real, você usaria uma biblioteca como JSZip
+    // para compactar todos os QR Codes e fazer download
+}
+
+function imprimirQRCodes() {
+    window.print();
+}
+
+// ====================================================================
+// NOVAS FUNCIONALIDADES: EXCLUSÃO DE COLABORADORES
+// ====================================================================
+
+function solicitarExclusaoColaborador(index) {
+    const colaborador = colaboradores[index];
+    if (!colaborador) return;
+    
+    // Verifica se o colaborador tem movimentações no histórico
+    const temMovimentacoes = historico.some(h => h.colaborador === colaborador.nome) || 
+                            historicoPendente.some(h => h.colaborador === colaborador.nome);
+    
+    if (temMovimentacoes) {
+        alert('Não é possível excluir este colaborador pois existem movimentações associadas a ele no histórico.');
+        return;
+    }
+    
+    colaboradorParaExcluir = index;
+    
+    document.getElementById('mensagemExclusao').textContent = 
+        `Tem certeza que deseja excluir o colaborador ${colaborador.id} - ${colaborador.nome}?`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+    modal.show();
+}
+
+function confirmarExclusaoColaborador() {
+    if (colaboradorParaExcluir === null) return;
+    
+    const colaborador = colaboradores[colaboradorParaExcluir];
+    
+    db.collection("colaboradores").doc(colaborador.idDoc).delete()
+    .then(() => {
+        alert(`Colaborador ${colaborador.id} - ${colaborador.nome} excluído com sucesso!`);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarExclusao'));
+        modal.hide();
+        colaboradorParaExcluir = null;
+    })
+    .catch(error => {
+        console.error("Erro ao excluir colaborador:", error);
+        alert("Erro ao excluir colaborador. Tente novamente.");
+    });
+}
+
+// ====================================================================
+// FUNCIONALIDADE OFFLINE (MANTIDA)
 // ====================================================================
 
 function configurarDetecaoConexao() {
-    // Verifica status inicial
     isOnline = navigator.onLine;
     atualizarStatusConexao();
 
-    // Listeners para mudanças de conexão
     window.addEventListener('online', function() {
         isOnline = true;
         atualizarStatusConexao();
@@ -613,13 +1059,11 @@ function atualizarStatusConexao() {
 }
 
 function carregarDadosOffline() {
-    // Carrega histórico pendente do localStorage
     const pendentesSalvos = localStorage.getItem('historicoPendente');
     if (pendentesSalvos) {
         historicoPendente = JSON.parse(pendentesSalvos);
     }
 
-    // Carrega última sincronização
     const ultimaSync = localStorage.getItem('ultimaSincronizacao');
     if (ultimaSync) {
         document.getElementById('ultimaSync').textContent = new Date(ultimaSync).toLocaleString('pt-BR');
@@ -629,7 +1073,6 @@ function carregarDadosOffline() {
 }
 
 function salvarDadosOffline() {
-    // Salva histórico pendente no localStorage
     localStorage.setItem('historicoPendente', JSON.stringify(historicoPendente));
     atualizarContadoresOffline();
 }
@@ -642,7 +1085,7 @@ function atualizarContadoresOffline() {
 
 function adicionarMovimentacaoOffline(chave, colaborador, acao) {
     const movimentacao = {
-        id: Date.now().toString(), // ID único baseado no timestamp
+        id: Date.now().toString(),
         chave: chave.id,
         nomeChave: chave.nome,
         colaborador: colaborador.nome,
@@ -656,12 +1099,9 @@ function adicionarMovimentacaoOffline(chave, colaborador, acao) {
     historicoPendente.push(movimentacao);
     salvarDadosOffline();
 
-    // Atualiza o status da chave localmente (offline)
     if (isOnline) {
-        // Se estiver online, tenta sincronizar imediatamente
         sincronizarMovimentacao(movimentacao);
     } else {
-        // Se estiver offline, atualiza apenas localmente
         atualizarStatusChaveLocal(chave, colaborador, acao);
     }
 
@@ -681,15 +1121,7 @@ function atualizarStatusChaveLocal(chave, colaborador, acao) {
 }
 
 async function sincronizarDadosPendentes() {
-    if (!isOnline) {
-        console.log("Sem conexão para sincronizar");
-        return;
-    }
-
-    if (historicoPendente.length === 0) {
-        console.log("Nenhum dado pendente para sincronizar");
-        return;
-    }
+    if (!isOnline || historicoPendente.length === 0) return;
 
     document.getElementById('syncStatus').style.display = 'block';
     
@@ -703,7 +1135,7 @@ async function sincronizarDadosPendentes() {
             sucessos++;
         } else {
             erros++;
-            break; // Para na primeira erro para evitar perda de dados
+            break;
         }
     }
 
@@ -712,18 +1144,11 @@ async function sincronizarDadosPendentes() {
     if (erros === 0) {
         localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
         document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
-        
-        if (sucessos > 0) {
-            alert(`✅ ${sucessos} movimentação(ões) sincronizada(s) com sucesso!`);
-        }
-    } else {
-        alert(`⚠️ ${sucessos} sincronizadas, ${erros} com erro. Tentando novamente mais tarde.`);
     }
 }
 
 async function sincronizarMovimentacao(movimentacao) {
     try {
-        // 1. Salva no histórico do Firebase
         await db.collection("historico").add({
             chave: movimentacao.chave,
             colaborador: movimentacao.colaborador,
@@ -732,7 +1157,6 @@ async function sincronizarMovimentacao(movimentacao) {
             dataTimestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // 2. Atualiza o status da chave no Firebase
         const chave = chaves.find(c => c.id === movimentacao.chave);
         if (chave) {
             if (movimentacao.acao === "RETIRADA") {
@@ -746,7 +1170,6 @@ async function sincronizarMovimentacao(movimentacao) {
             }
         }
 
-        // 3. Remove da lista de pendentes
         historicoPendente = historicoPendente.filter(m => m.id !== movimentacao.id);
         salvarDadosOffline();
         
@@ -781,17 +1204,13 @@ function atualizarListaPendentes() {
 
 async function tentarSincronizarUnico(id) {
     const movimentacao = historicoPendente.find(m => m.id === id);
-    if (movimentacao) {
-        if (await sincronizarMovimentacao(movimentacao)) {
-            alert('Movimentação sincronizada com sucesso!');
-        } else {
-            alert('Erro ao sincronizar. Verifique a conexão.');
-        }
+    if (movimentacao && await sincronizarMovimentacao(movimentacao)) {
+        alert('Movimentação sincronizada com sucesso!');
     }
 }
 
 // ====================================================================
-// 1. FUNÇÕES DE LEITURA
+// FUNÇÕES DE LEITURA DO FIREBASE
 // ====================================================================
 
 function carregarChavesFirebase() {
@@ -803,7 +1222,8 @@ function carregarChavesFirebase() {
             return num > max ? num : max;
         }, 0);
         
-        atualizarListas(); 
+        atualizarListas();
+        atualizarEstatisticas();
     }, error => {
         console.error("Erro ao carregar chaves:", error);
     });
@@ -820,6 +1240,7 @@ function carregarColaboradoresFirebase() {
         
         document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
         atualizarListas();
+        atualizarEstatisticas();
     }, error => {
         console.error("Erro ao carregar colaboradores:", error);
     });
@@ -829,18 +1250,18 @@ function carregarHistoricoFirebase() {
     db.collection("historico").orderBy("dataTimestamp", "desc").onSnapshot((snapshot) => {
         historico = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
         atualizarListas();
+        atualizarEstatisticas();
     }, error => {
         console.error("Erro ao carregar histórico:", error);
     });
 }
 
 // ====================================================================
-// 2. FUNÇÕES DE ESCRITA E CRIAÇÃO
+// FUNÇÕES DE ESCRITA E CRIAÇÃO
 // ====================================================================
 
 function salvarMovimentacao(chave, colaborador, acao) {
     if (isOnline) {
-        // Online: salva diretamente no Firebase
         db.collection("historico").add({
             chave: chave.id,
             colaborador: colaborador.nome,
@@ -850,11 +1271,9 @@ function salvarMovimentacao(chave, colaborador, acao) {
         })
         .catch(error => {
             console.error("Erro ao salvar histórico:", error);
-            // Se falhar, salva offline
             adicionarMovimentacaoOffline(chave, colaborador, acao);
         });
     } else {
-        // Offline: salva localmente
         adicionarMovimentacaoOffline(chave, colaborador, acao);
     }
 }
@@ -904,7 +1323,7 @@ function cadastrarColaborador() {
 }
 
 // ====================================================================
-// FUNÇÕES DE RETIRADA E DEVOLUÇÃO (COM SUPORTE OFFLINE)
+// FUNÇÕES DE RETIRADA E DEVOLUÇÃO
 // ====================================================================
 
 function validarIdColaborador(idCol) {
@@ -936,7 +1355,6 @@ function confirmarRetirada() {
         return;
     }
 
-    // Verificação de status melhorada
     if (chave.status !== "Disponível" && !chave.status.includes("Offline")) {
         alert(`Erro: Esta chave já está ${chave.status}. Use a opção de Devolução.`);
         reiniciarScanner();
@@ -944,7 +1362,6 @@ function confirmarRetirada() {
     }
 
     if (isOnline) {
-        // Online: atualiza diretamente no Firebase
         db.collection("chaves").doc(chave.idDoc).update({
             status: "Retirada por " + colab.nome
         })
@@ -955,13 +1372,11 @@ function confirmarRetirada() {
         })
         .catch(error => {
             console.error("Erro ao retirar chave:", error);
-            // Se falhar, tenta modo offline
             const movimentacao = adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
             alert(`✅ Retirada registrada offline! Será sincronizada automaticamente.`);
             reiniciarScanner();
         });
     } else {
-        // Offline: salva localmente
         const movimentacao = adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
         alert(`✅ Retirada registrada offline! (ID: ${movimentacao.id})\nSerá sincronizada quando a conexão voltar.`);
         reiniciarScanner();
@@ -990,14 +1405,12 @@ function confirmarDevolucao() {
         return;
     }
 
-    // Verificação de status melhorada
     if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
         alert("Erro: Esta chave já está disponível.");
         reiniciarScanner();
         return;
     }
     
-    // Alerta se quem está devolvendo não é quem retirou
     const nomeQuemRetirou = chave.status.replace("Retirada por ", "").replace(" (Offline)", "");
     if (!chave.status.includes(colab.nome) && nomeQuemRetirou !== colab.nome) {
         if (!confirm(`Atenção: A chave foi retirada por ${nomeQuemRetirou}. Deseja confirmar a devolução por ${colab.nome} mesmo assim?`)) {
@@ -1006,7 +1419,6 @@ function confirmarDevolucao() {
     }
 
     if (isOnline) {
-        // Online: atualiza diretamente no Firebase
         db.collection("chaves").doc(chave.idDoc).update({
             status: "Disponível"
         })
@@ -1017,21 +1429,16 @@ function confirmarDevolucao() {
         })
         .catch(error => {
             console.error("Erro ao devolver chave:", error);
-            // Se falhar, tenta modo offline
             const movimentacao = adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
             alert(`✅ Devolução registrada offline! Será sincronizada automaticamente.`);
             reiniciarScanner();
         });
     } else {
-        // Offline: salva localmente
         const movimentacao = adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
         alert(`✅ Devolução registrada offline! (ID: ${movimentacao.id})\nSerá sincronizada quando a conexão voltar.`);
         reiniciarScanner();
     }
 }
-
-// ... (o restante do código permanece igual, incluindo as funções do scanner, renderização, etc.)
-// [O código continua com as funções restantes que não foram modificadas]
 
 function salvarEdicao() {
     const novoNome = document.getElementById("modalInput").value.trim();
@@ -1067,7 +1474,7 @@ function salvarEdicao() {
 }
 
 // ====================================================================
-// 3. FUNÇÕES DO SCANNER (CORRIGIDAS)
+// FUNÇÕES DO SCANNER
 // ====================================================================
 
 function showPage(page, event) {
@@ -1080,7 +1487,6 @@ function showPage(page, event) {
     if(event) event.currentTarget.classList.add("activeMenu");
     else document.querySelector(`.sidebar a[onclick*="${page}"]`).classList.add("activeMenu");
 
-    // LÓGICA DO SCANNER CORRIGIDA
     if (page === 'qr') {
         iniciarScanner();
     } else {
@@ -1094,6 +1500,14 @@ function showPage(page, event) {
     if (page === 'offline') {
         atualizarListaPendentes();
     }
+
+    if (page === 'qr-codes') {
+        gerarTodosQRCodes();
+    }
+
+    if (page === 'relatorios') {
+        atualizarEstatisticas();
+    }
 }
 
 function iniciarScanner() {
@@ -1102,7 +1516,6 @@ function iniciarScanner() {
         return;
     }
 
-    // Limpa o scanner anterior se existir
     if (html5QrcodeScanner) {
         html5QrcodeScanner.clear();
     }
@@ -1195,7 +1608,6 @@ function atualizarStatusScanner() {
 }
 
 function onScanSuccess(decodedText) {
-    // Pausa o scanner temporariamente
     pausarScanner();
     
     const chave = chaves.find(c => c.id === decodedText);
@@ -1205,7 +1617,6 @@ function onScanSuccess(decodedText) {
         document.getElementById("areaConfirmacao").style.display = "none";
         alert("QR Code lido, mas nenhuma chave correspondente foi encontrada no sistema.");
         
-        // Retoma o scanner após 2 segundos
         setTimeout(retomarScanner, 2000);
         return;
     }
@@ -1214,7 +1625,6 @@ function onScanSuccess(decodedText) {
     document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
     document.getElementById("areaConfirmacao").style.display = "block";
 
-    // Lógica CORRIGIDA para mostrar Retirar ou Devolver
     const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
     
     document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
@@ -1229,18 +1639,16 @@ function onScanError(errorMessage) {
 }
 
 function reiniciarScanner() {
-    // Limpar interface
     document.getElementById("areaConfirmacao").style.display = "none";
     document.getElementById("chaveDetectada").innerText = "Nenhuma";
     document.getElementById("idColRetirada").value = "";
     chaveSelecionada = null;
 
-    // Reiniciar scanner
     retomarScanner();
 }
 
 // ====================================================================
-// 4. FUNÇÕES UTILS (Renderização, QR Code, UX)
+// FUNÇÕES UTILS (Renderização, QR Code, UX)
 // ====================================================================
 
 function gerarQRCode(texto) {
@@ -1288,7 +1696,6 @@ function filtrarChaves() {
 }
 
 function atualizarListas() {
-    // Estatísticas do Dashboard
     const totalDisponiveis = chaves.filter(c => 
         c.status === "Disponível" || c.status === "Disponível (Offline)"
     ).length;
@@ -1300,10 +1707,8 @@ function atualizarListas() {
     document.getElementById("totalCol").innerText = colaboradores.length;
     document.getElementById("totalHist").innerText = historico.length + historicoPendente.length;
 
-    // Lista de Chaves
     renderizarChaves(chaves);
 
-    // Lista de Colaboradores
     let colList = document.getElementById("listaColaboradores");
     colList.innerHTML = "";
     colaboradores.forEach((c, idx) => {
@@ -1312,18 +1717,19 @@ function atualizarListas() {
                 <td>${c.id}</td>
                 <td>${c.nome}</td>
                 <td>
-                    <button class="btn btn-sm btn-success" onclick="abrirEdicao('colaborador', ${idx})">
+                    <button class="btn btn-sm btn-success me-1" onclick="abrirEdicao('colaborador', ${idx})">
                         <i class="fa fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoColaborador(${idx})">
+                        <i class="fa fa-trash"></i> Excluir
                     </button>
                 </td>
             </tr>`;
     });
 
-    // Lista de Histórico
     let hist = document.getElementById("listaHistorico");
     hist.innerHTML = "";
     
-    // Combina histórico online com pendentes para exibição
     const todosRegistros = [...historico, ...historicoPendente];
     todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
     
@@ -1340,6 +1746,18 @@ function atualizarListas() {
                 <td>${status}</td>
             </tr>`;
     });
+}
+
+function atualizarEstatisticas() {
+    const totalDisponiveis = chaves.filter(c => 
+        c.status === "Disponível" || c.status === "Disponível (Offline)"
+    ).length;
+    const totalMovimentacoes = historico.length + historicoPendente.length;
+
+    document.getElementById('statChavesTotal').textContent = chaves.length;
+    document.getElementById('statChavesDisponiveis').textContent = totalDisponiveis;
+    document.getElementById('statColaboradoresTotal').textContent = colaboradores.length;
+    document.getElementById('statMovimentacoesTotal').textContent = totalMovimentacoes;
 }
 
 function renderizarChaves(chavesParaExibir) {
@@ -1381,7 +1799,6 @@ function renderizarChaves(chavesParaExibir) {
     });
 }
 
-// FUNÇÕES DE UX PARA RETIRADA/DEVOLUÇÃO RÁPIDA
 function iniciarRetiradaRapida(chaveId) {
     showPage('qr'); 
     
@@ -1392,12 +1809,10 @@ function iniciarRetiradaRapida(chaveId) {
         document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
         document.getElementById("areaConfirmacao").style.display = "block";
 
-        // Prepara para Retirada
         document.getElementById("btnConfirmarRetirada").style.display = "block";
         document.getElementById("btnDevolverChave").style.display = "none";
         document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
         
-        // Pausa o scanner já que a chave foi selecionada manualmente
         pausarScanner();
     }
 }
@@ -1412,12 +1827,10 @@ function iniciarDevolucaoRapida(chaveId) {
         document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
         document.getElementById("areaConfirmacao").style.display = "block";
 
-        // Prepara para Devolução
         document.getElementById("btnConfirmarRetirada").style.display = "none";
         document.getElementById("btnDevolverChave").style.display = "block";
         document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
         
-        // Pausa o scanner já que a chave foi selecionada manualmente
         pausarScanner();
     }
 }
@@ -1432,31 +1845,6 @@ function abrirEdicao(tipo, indexOriginal) {
     
     const modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
     modalInstance.show();
-}
-
-// Funções do Relatório
-function gerarRelatorioHistorico() {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Chave ID,Colaborador,Acao,Data,Status\n";
-
-    // Combina histórico online com pendentes
-    const todosRegistros = [...historico, ...historicoPendente];
-    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
-
-    todosRegistros.forEach(h => {
-        const status = h.sincronizado === false ? 'Pendente' : 'Sincronizado';
-        let row = `${h.chave},"${h.colaborador}",${h.acao},${h.data},${status}\n`;
-        csvContent += row;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "historico_chaves.csv");
-    document.body.appendChild(link); // Required for Firefox
-    link.click();
-    link.remove();
-    alert("Relatório CSV gerado com sucesso!");
 }
 
 </script>
