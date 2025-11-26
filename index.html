@@ -291,6 +291,28 @@
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
+
+        /* =======================================
+            ESTILOS PARA O LEITOR DE CÓDIGO DE BARRAS
+            ======================================= */
+        .leitor-section {
+            background: #2d2d2d;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .leitor-section h5 {
+            color: #fd790d;
+            margin-bottom: 15px;
+        }
+
+        .leitor-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -484,24 +506,60 @@
             <div class="card p-4 mt-3">
                 <h4>Escanear QR Code da Chave</h4>
                 
-                <!-- Status do Scanner -->
+                <!-- Controle do Leitor de Código de Barras -->
+                <div class="card p-3 mb-3 leitor-section">
+                    <h5><i id="iconeLeitor" class="fa fa-barcode text-muted"></i> Leitor de Código de Barras LB-W110BK</h5>
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status:</strong> 
+                                <span id="statusLeitor" class="badge bg-danger">Desconectado</span>
+                            </p>
+                            <small class="text-muted">Modo: Emulação de Teclado</small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button id="btnToggleLeitor" class="btn btn-success btn-sm" onclick="toggleLeitor()">
+                                <i class="fa fa-plug"></i> Conectar Leitor
+                            </button>
+                            <button class="btn btn-info btn-sm ms-2" onclick="testarLeitor()">
+                                <i class="fa fa-test"></i> Testar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-info">
+                            <i class="fa fa-info-circle"></i> 
+                            Conecte o leitor via USB e clique em "Conectar Leitor". O leitor funciona automaticamente como um teclado.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Status do Scanner de Câmera -->
                 <div id="scannerStatus" class="scanner-status scanner-active" style="display: none;">
-                    <i class="fa fa-camera"></i> Scanner ativo
+                    <i class="fa fa-camera"></i> Scanner de câmera ativo
                 </div>
                 
                 <div id="reader" style="width:300px; margin: 0 auto;"></div>
 
                 <div class="mt-3 text-center">
                     <button id="btnToggleScanner" class="btn btn-outline-warning btn-sm" onclick="toggleScanner()" style="display: none;">
-                        <i class="fa fa-pause"></i> Pausar Scanner
+                        <i class="fa fa-pause"></i> Pausar Scanner Câmera
                     </button>
                 </div>
 
                 <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
 
                 <div id="areaConfirmacao" style="display:none;">
-                    <input id="idColRetirada" placeholder="ID do colaborador" class="form-control mt-2">
-                    <div class="mt-2">
+                    <div class="input-group">
+                        <input id="idColRetirada" placeholder="ID do colaborador (use o leitor)" class="form-control">
+                        <button class="btn btn-outline-secondary" type="button" onclick="testarLeitor()">
+                            <i class="fa fa-barcode"></i> Testar Leitor
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                        Aponte o leitor para o código de barras do ID do colaborador
+                    </small>
+                    
+                    <div class="mt-3">
                         <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="confirmarRetirada()">
                             <i class="fa fa-check"></i> Confirmar Retirada
                         </button>
@@ -509,6 +567,7 @@
                             <i class="fa fa-reply"></i> Confirmar Devolução
                         </button>
                     </div>
+                    
                     <button class="btn btn-outline-light w-100 mt-2" onclick="reiniciarScanner()">
                         <i class="fa fa-refresh"></i> Escanear Novamente
                     </button>
@@ -738,6 +797,11 @@ let scannerPausado = false;
 let isOnline = true;
 let colaboradorParaExcluir = null;
 
+// Variáveis para o leitor LB-W110BK
+let leitorConectado = false;
+let codigoBuffer = '';
+let timeoutBuffer;
+
 /* ==================================
     CONFIGURAÇÃO DO FIREBASE
 ================================== */
@@ -769,8 +833,178 @@ function iniciarSistema() {
     document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
     document.getElementById("btnConfirmarExclusao").addEventListener("click", confirmarExclusaoColaborador);
 
+    // Inicializa o leitor automaticamente (modo teclado sempre disponível)
+    setTimeout(() => {
+        inicializarLeitorTeclado();
+    }, 1000);
+
     // Tenta sincronizar dados pendentes ao iniciar
     setTimeout(sincronizarDadosPendentes, 2000);
+}
+
+// ====================================================================
+// CONEXÃO COM LEITOR DE CÓDIGO DE BARRAS LB-W110BK (MODO TECLADO)
+// ====================================================================
+
+// Função para inicializar o leitor no modo teclado
+function inicializarLeitorTeclado() {
+    leitorConectado = true;
+    document.addEventListener('keydown', handleLeitorInput);
+    atualizarStatusLeitorInterface();
+    console.log('Leitor LB-W110BK inicializado no modo teclado');
+}
+
+// Função para processar a entrada do leitor
+function handleLeitorInput(event) {
+    // Ignora se não for um caractere normal ou se for teclas especiais
+    if (event.key.length > 1 && !['Enter', 'Tab'].includes(event.key)) {
+        return;
+    }
+
+    // Se for Enter, processa o código acumulado
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        
+        if (codigoBuffer.trim()) {
+            processarCodigoBarras(codigoBuffer.trim());
+            codigoBuffer = '';
+            clearTimeout(timeoutBuffer);
+        }
+        return;
+    }
+
+    // Adiciona o caractere ao buffer
+    codigoBuffer += event.key;
+    
+    // Limpa o buffer após um tempo (para casos onde não há Enter)
+    clearTimeout(timeoutBuffer);
+    timeoutBuffer = setTimeout(() => {
+        if (codigoBuffer.length > 3) { // Assume que é um código válido
+            processarCodigoBarras(codigoBuffer);
+        }
+        codigoBuffer = '';
+    }, 100);
+}
+
+// Função para processar o código lido
+function processarCodigoBarras(codigo) {
+    console.log('Código lido:', codigo);
+    
+    // Remove possíveis caracteres especiais do leitor
+    codigo = codigo.replace(/[^\w\-]/g, '');
+    
+    // Verifica se está na página de QR Code
+    const paginaQR = document.getElementById('qr').style.display !== 'none';
+    
+    if (paginaQR) {
+        // Na página QR, primeiro verifica se é uma chave
+        if (codigo.startsWith('CH-')) {
+            onScanSuccess(codigo);
+            return;
+        }
+    }
+    
+    // Se não for chave ou não estiver na página QR, assume que é ID de colaborador
+    if (/^\d+$/.test(codigo)) {
+        const inputColaborador = document.getElementById('idColRetirada');
+        if (inputColaborador) {
+            inputColaborador.value = codigo;
+            
+            // Foca no próximo campo se estiver na área de confirmação
+            if (document.getElementById('areaConfirmacao').style.display !== 'none') {
+                setTimeout(() => {
+                    const btnRetirada = document.getElementById('btnConfirmarRetirada');
+                    const btnDevolucao = document.getElementById('btnDevolverChave');
+                    
+                    if (btnRetirada.style.display !== 'none') {
+                        btnRetirada.focus();
+                    } else if (btnDevolucao.style.display !== 'none') {
+                        btnDevolucao.focus();
+                    }
+                }, 100);
+            }
+        }
+    } else if (codigo.startsWith('CH-')) {
+        // Se for chave mas não está na página QR, muda para a página QR
+        showPage('qr');
+        setTimeout(() => onScanSuccess(codigo), 500);
+    }
+}
+
+// Função para conectar/desconectar o leitor
+function toggleLeitor() {
+    if (leitorConectado) {
+        desconectarLeitor();
+    } else {
+        conectarLeitor();
+    }
+}
+
+// Função para conectar o leitor
+function conectarLeitor() {
+    if (!leitorConectado) {
+        inicializarLeitorTeclado();
+        alert('Leitor LB-W110BK conectado! Agora você pode usar o leitor para escanear QR Codes e códigos de barras.');
+    }
+}
+
+// Função para desconectar o leitor
+function desconectarLeitor() {
+    if (leitorConectado) {
+        document.removeEventListener('keydown', handleLeitorInput);
+        leitorConectado = false;
+        codigoBuffer = '';
+        clearTimeout(timeoutBuffer);
+        atualizarStatusLeitorInterface();
+        alert('Leitor desconectado.');
+    }
+}
+
+// Função para atualizar a interface do leitor
+function atualizarStatusLeitorInterface() {
+    const statusElement = document.getElementById('statusLeitor');
+    const btnToggle = document.getElementById('btnToggleLeitor');
+    const iconeLeitor = document.getElementById('iconeLeitor');
+    
+    if (leitorConectado) {
+        statusElement.textContent = 'Conectado';
+        statusElement.className = 'badge bg-success';
+        btnToggle.innerHTML = '<i class="fa fa-power-off"></i> Desconectar Leitor';
+        btnToggle.className = 'btn btn-warning btn-sm';
+        iconeLeitor.className = 'fa fa-barcode text-success';
+    } else {
+        statusElement.textContent = 'Desconectado';
+        statusElement.className = 'badge bg-danger';
+        btnToggle.innerHTML = '<i class="fa fa-plug"></i> Conectar Leitor';
+        btnToggle.className = 'btn btn-success btn-sm';
+        iconeLeitor.className = 'fa fa-barcode text-muted';
+    }
+}
+
+// Função para testar o leitor
+function testarLeitor() {
+    if (!leitorConectado) {
+        alert('Conecte o leitor primeiro!');
+        return;
+    }
+    
+    const inputColaborador = document.getElementById('idColRetirada');
+    if (inputColaborador) {
+        inputColaborador.focus();
+        alert('Aponte o leitor para o código de barras do colaborador...');
+    } else {
+        alert('Aponte o leitor para um QR Code de chave...');
+    }
+}
+
+// Função para focar automaticamente no campo de colaborador quando necessário
+function focarCampoColaborador() {
+    setTimeout(() => {
+        const inputColaborador = document.getElementById('idColRetirada');
+        if (inputColaborador && document.getElementById('areaConfirmacao').style.display !== 'none') {
+            inputColaborador.focus();
+        }
+    }, 500);
 }
 
 // ====================================================================
@@ -778,130 +1012,130 @@ function iniciarSistema() {
 // ====================================================================
 
 function gerarRelatorioChaves() {
-    // Cria o conteúdo CSV com BOM para UTF-8
-    let csvContent = "\uFEFF"; // BOM para UTF-8
-    csvContent += "ID da Chave,Nome da Chave,Status,Data de Cadastro\n";
+    // Cria o conteúdo CSV com BOM para UTF-8
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID da Chave,Nome da Chave,Status,Data de Cadastro\n";
 
-    chaves.forEach(chave => {
-        // Remove caracteres problemáticos e formata corretamente
-        const nomeChave = limparTextoCSV(chave.nome);
-        const statusChave = limparTextoCSV(chave.status);
-        const dataCadastro = new Date().toLocaleDateString('pt-BR');
-        
-        let row = `${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
-        csvContent += row;
-    });
+    chaves.forEach(chave => {
+        // Remove caracteres problemáticos e formata corretamente
+        const nomeChave = limparTextoCSV(chave.nome);
+        const statusChave = limparTextoCSV(chave.status);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
 
-    criarDownloadCSV(csvContent, `relatorio_chaves_${formatarDataArquivo()}.csv`);
-    alert("Relatório de chaves gerado com sucesso!");
+    criarDownloadCSV(csvContent, `relatorio_chaves_${formatarDataArquivo()}.csv`);
+    alert("Relatório de chaves gerado com sucesso!");
 }
 
 function gerarRelatorioColaboradores() {
-    let csvContent = "\uFEFF"; // BOM para UTF-8
-    csvContent += "ID do Colaborador,Nome do Colaborador,Data de Cadastro\n";
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID do Colaborador,Nome do Colaborador,Data de Cadastro\n";
 
-    colaboradores.forEach(colaborador => {
-        const nomeColaborador = limparTextoCSV(colaborador.nome);
-        const dataCadastro = new Date().toLocaleDateString('pt-BR');
-        
-        let row = `${colaborador.id},"${nomeColaborador}","${dataCadastro}"\n`;
-        csvContent += row;
-    });
+    colaboradores.forEach(colaborador => {
+        const nomeColaborador = limparTextoCSV(colaborador.nome);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `${colaborador.id},"${nomeColaborador}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
 
-    criarDownloadCSV(csvContent, `relatorio_colaboradores_${formatarDataArquivo()}.csv`);
-    alert("Relatório de colaboradores gerado com sucesso!");
+    criarDownloadCSV(csvContent, `relatorio_colaboradores_${formatarDataArquivo()}.csv`);
+    alert("Relatório de colaboradores gerado com sucesso!");
 }
 
 function gerarRelatorioHistorico() {
-    let csvContent = "\uFEFF"; // BOM para UTF-8
-    csvContent += "ID da Chave,Nome do Colaborador,Ação,Data,Status\n";
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "ID da Chave,Nome do Colaborador,Ação,Data,Status\n";
 
-    // Combina histórico online com pendentes
-    const todosRegistros = [...historico, ...historicoPendente];
-    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+    // Combina histórico online com pendentes
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
 
-    todosRegistros.forEach(registro => {
-        const nomeColaborador = limparTextoCSV(registro.colaborador);
-        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
-        
-        let row = `${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}","${status}"\n`;
-        csvContent += row;
-    });
+    todosRegistros.forEach(registro => {
+        const nomeColaborador = limparTextoCSV(registro.colaborador);
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        
+        let row = `${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}","${status}"\n`;
+        csvContent += row;
+    });
 
-    criarDownloadCSV(csvContent, `relatorio_historico_${formatarDataArquivo()}.csv`);
-    alert("Relatório de histórico gerado com sucesso!");
+    criarDownloadCSV(csvContent, `relatorio_historico_${formatarDataArquivo()}.csv`);
+    alert("Relatório de histórico gerado com sucesso!");
 }
 
 function gerarRelatorioCompleto() {
-    let csvContent = "\uFEFF"; // BOM para UTF-8
-    csvContent += "Tipo,ID,Nome,Status,Data\n";
+    let csvContent = "\uFEFF"; // BOM para UTF-8
+    csvContent += "Tipo,ID,Nome,Status,Data\n";
 
-    // Adiciona chaves
-    chaves.forEach(chave => {
-        const nomeChave = limparTextoCSV(chave.nome);
-        const statusChave = limparTextoCSV(chave.status);
-        const dataCadastro = new Date().toLocaleDateString('pt-BR');
-        
-        let row = `Chave,${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
-        csvContent += row;
-    });
+    // Adiciona chaves
+    chaves.forEach(chave => {
+        const nomeChave = limparTextoCSV(chave.nome);
+        const statusChave = limparTextoCSV(chave.status);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `Chave,${chave.id},"${nomeChave}","${statusChave}","${dataCadastro}"\n`;
+        csvContent += row;
+    });
 
-    // Adiciona colaboradores
-    colaboradores.forEach(colaborador => {
-        const nomeColaborador = limparTextoCSV(colaborador.nome);
-        const dataCadastro = new Date().toLocaleDateString('pt-BR');
-        
-        let row = `Colaborador,${colaborador.id},"${nomeColaborador}","Ativo","${dataCadastro}"\n`;
-        csvContent += row;
-    });
+    // Adiciona colaboradores
+    colaboradores.forEach(colaborador => {
+        const nomeColaborador = limparTextoCSV(colaborador.nome);
+        const dataCadastro = new Date().toLocaleDateString('pt-BR');
+        
+        let row = `Colaborador,${colaborador.id},"${nomeColaborador}","Ativo","${dataCadastro}"\n`;
+        csvContent += row;
+    });
 
-    // Adiciona histórico
-    const todosRegistros = [...historico, ...historicoPendente];
-    todosRegistros.forEach(registro => {
-        const nomeColaborador = limparTextoCSV(registro.colaborador);
-        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
-        
-        let row = `Movimentação,${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}"\n`;
-        csvContent += row;
-    });
+    // Adiciona histórico
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.forEach(registro => {
+        const nomeColaborador = limparTextoCSV(registro.colaborador);
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        
+        let row = `Movimentação,${registro.chave},"${nomeColaborador}","${registro.acao}","${registro.data}"\n`;
+        csvContent += row;
+    });
 
-    criarDownloadCSV(csvContent, `relatorio_completo_${formatarDataArquivo()}.csv`);
-    alert("Relatório completo gerado com sucesso!");
+    criarDownloadCSV(csvContent, `relatorio_completo_${formatarDataArquivo()}.csv`);
+    alert("Relatório completo gerado com sucesso!");
 }
 
 // Funções auxiliares para formatação correta do CSV
 function limparTextoCSV(texto) {
-    if (!texto) return '';
-    
-    // Remove caracteres problemáticos para CSV
-    return texto.toString()
-        .replace(/"/g, '""') // Escapa aspas duplas
-        .replace(/\n/g, ' ') // Remove quebras de linha
-        .replace(/\r/g, ' ') // Remove carriage return
-        .replace(/\t/g, ' ') // Remove tabs
-        .trim();
+    if (!texto) return '';
+    
+    // Remove caracteres problemáticos para CSV
+    return texto.toString()
+        .replace(/"/g, '""') // Escapa aspas duplas
+        .replace(/\n/g, ' ') // Remove quebras de linha
+        .replace(/\r/g, ' ') // Remove carriage return
+        .replace(/\t/g, ' ') // Remove tabs
+        .trim();
 }
 
 function formatarDataArquivo() {
-    const data = new Date();
-    return data.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    const data = new Date();
+    return data.toISOString().split('T')[0]; // Formato YYYY-MM-DD
 }
 
 function criarDownloadCSV(csvContent, nomeArquivo) {
-    // Cria blob com encoding UTF-8
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    // Cria link de download
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", nomeArquivo);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Cria blob com encoding UTF-8
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Cria link de download
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", nomeArquivo);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // ====================================================================
@@ -1632,6 +1866,9 @@ function onScanSuccess(decodedText) {
     document.getElementById("idColRetirada").placeholder = isDisponivel ? 
         "ID do colaborador que vai RETIRAR" : 
         "ID do colaborador que vai DEVOLVER";
+    
+    // Foca automaticamente no campo do colaborador
+    focarCampoColaborador();
 }
 
 function onScanError(errorMessage) {
