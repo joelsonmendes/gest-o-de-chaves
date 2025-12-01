@@ -313,6 +313,50 @@
             padding: 5px 10px;
             border-radius: 4px;
         }
+
+        /* =======================================
+            ESTILOS PARA FUNCIONALIDADE DE VOZ
+            ======================================= */
+        .voice-control-section {
+            background: #2d2d2d;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .voice-control-section h5 {
+            color: #fd790d;
+            margin-bottom: 15px;
+        }
+
+        .voice-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .voice-active {
+            background: #1a331a;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .voice-inactive {
+            background: #332b1a;
+            color: #FF9800;
+            border: 1px solid #FF9800;
+        }
+
+        .voice-instruction {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-style: italic;
+            color: #ccc;
+        }
     </style>
 </head>
 
@@ -533,6 +577,43 @@
                     </div>
                 </div>
 
+                <!-- Controle de Voz -->
+                <div class="card p-3 mb-3 voice-control-section">
+                    <h5><i id="iconeVoz" class="fa fa-microphone text-muted"></i> Assistente de Voz</h5>
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status:</strong> 
+                                <span id="statusVoz" class="badge bg-danger">Inativo</span>
+                            </p>
+                            <small class="text-muted">Reconhecimento de voz para ID do colaborador</small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button id="btnToggleVoz" class="btn btn-success btn-sm" onclick="toggleReconhecimentoVoz()">
+                                <i class="fa fa-microphone"></i> Ativar Voz
+                            </button>
+                            <button class="btn btn-info btn-sm ms-2" onclick="testarVoz()">
+                                <i class="fa fa-test"></i> Testar Voz
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="voiceStatus" class="voice-status voice-inactive" style="display: none;">
+                        <i class="fa fa-microphone"></i> Aguardando comando de voz...
+                    </div>
+                    
+                    <div class="voice-instruction">
+                        <strong>Instruções:</strong> Após escanear o QR Code da chave, o sistema perguntará "Qual o ID do colaborador?". 
+                        Responda com o número do ID (exemplo: "zero um" para ID 01).
+                    </div>
+                    
+                    <div class="mt-2">
+                        <small class="text-info">
+                            <i class="fa fa-info-circle"></i> 
+                            O reconhecimento de voz funciona melhor com fones de ouvido e em ambiente silencioso.
+                        </small>
+                    </div>
+                </div>
+
                 <!-- Status do Scanner de Câmera -->
                 <div id="scannerStatus" class="scanner-status scanner-active" style="display: none;">
                     <i class="fa fa-camera"></i> Scanner de câmera ativo
@@ -550,13 +631,16 @@
 
                 <div id="areaConfirmacao" style="display:none;">
                     <div class="input-group">
-                        <input id="idColRetirada" placeholder="ID do colaborador (use o leitor)" class="form-control">
+                        <input id="idColRetirada" placeholder="ID do colaborador (use o leitor ou voz)" class="form-control">
                         <button class="btn btn-outline-secondary" type="button" onclick="testarLeitor()">
                             <i class="fa fa-barcode"></i> Testar Leitor
                         </button>
+                        <button class="btn btn-outline-info" type="button" onclick="iniciarReconhecimentoVoz()">
+                            <i class="fa fa-microphone"></i> Voz
+                        </button>
                     </div>
                     <small class="text-muted d-block mt-1">
-                        Aponte o leitor para o código de barras do ID do colaborador
+                        Aponte o leitor para o código de barras do ID do colaborador OU use o comando de voz
                     </small>
                     
                     <div class="mt-3">
@@ -728,7 +812,7 @@
 
     <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 3.1.0 (Relatórios Corrigidos + Caracteres UTF-8)</p>
+        <p>Versão 3.2.0 (Funcionalidade de Voz Adicionada)</p>
     </footer>
 
 </div> 
@@ -777,7 +861,7 @@
 
 <script>
 // ============================================================
-//                    SCRIPT DO SISTEMA (com Firebase + Offline + Novas Funcionalidades)
+//                    SCRIPT DO SISTEMA (com Firebase + Offline + Voz)
 // ============================================================
 
 // Variáveis Globais
@@ -801,6 +885,11 @@ let colaboradorParaExcluir = null;
 let leitorConectado = false;
 let codigoBuffer = '';
 let timeoutBuffer;
+
+// Variáveis para reconhecimento de voz
+let reconhecimentoVoz = null;
+let vozAtiva = false;
+let aguardandoRespostaVoz = false;
 
 /* ==================================
     CONFIGURAÇÃO DO FIREBASE
@@ -838,8 +927,277 @@ function iniciarSistema() {
         inicializarLeitorTeclado();
     }, 1000);
 
+    // Inicializa o reconhecimento de voz
+    inicializarReconhecimentoVoz();
+
     // Tenta sincronizar dados pendentes ao iniciar
     setTimeout(sincronizarDadosPendentes, 2000);
+}
+
+// ====================================================================
+// FUNCIONALIDADE DE RECONHECIMENTO DE VOZ
+// ====================================================================
+
+function inicializarReconhecimentoVoz() {
+    // Verifica se o navegador suporta reconhecimento de voz
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        console.warn('Reconhecimento de voz não suportado neste navegador');
+        document.getElementById('btnToggleVoz').disabled = true;
+        document.getElementById('btnToggleVoz').innerHTML = '<i class="fa fa-microphone-slash"></i> Não Suportado';
+        return;
+    }
+
+    // Cria instância do reconhecimento de voz
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    reconhecimentoVoz = new SpeechRecognition();
+    
+    // Configurações
+    reconhecimentoVoz.continuous = false;
+    reconhecimentoVoz.interimResults = false;
+    reconhecimentoVoz.lang = 'pt-BR';
+
+    // Eventos
+    reconhecimentoVoz.onstart = function() {
+        console.log('Reconhecimento de voz iniciado');
+        atualizarStatusVozInterface(true, true);
+    };
+
+    reconhecimentoVoz.onresult = function(event) {
+        const transcript = event.results[0][0].transcript.trim();
+        console.log('Texto reconhecido:', transcript);
+        
+        processarComandoVoz(transcript);
+    };
+
+    reconhecimentoVoz.onerror = function(event) {
+        console.error('Erro no reconhecimento de voz:', event.error);
+        
+        if (event.error === 'not-allowed') {
+            alert('Permissão para uso do microfone negada. Por favor, permita o acesso ao microfone.');
+        }
+        
+        atualizarStatusVozInterface(false, false);
+        aguardandoRespostaVoz = false;
+    };
+
+    reconhecimentoVoz.onend = function() {
+        console.log('Reconhecimento de voz finalizado');
+        
+        // Se ainda estiver aguardando resposta, reinicia o reconhecimento
+        if (aguardandoRespostaVoz && vozAtiva) {
+            setTimeout(() => {
+                reconhecimentoVoz.start();
+            }, 500);
+        } else {
+            atualizarStatusVozInterface(vozAtiva, false);
+        }
+    };
+}
+
+function toggleReconhecimentoVoz() {
+    if (vozAtiva) {
+        desativarReconhecimentoVoz();
+    } else {
+        ativarReconhecimentoVoz();
+    }
+}
+
+function ativarReconhecimentoVoz() {
+    if (!reconhecimentoVoz) {
+        alert('Reconhecimento de voz não está disponível neste navegador.');
+        return;
+    }
+
+    vozAtiva = true;
+    aguardandoRespostaVoz = false;
+    
+    // Solicita permissão do usuário
+    reconhecimentoVoz.start();
+    
+    alert('Assistente de voz ativado! Após escanear um QR Code, o sistema perguntará qual o ID do colaborador.');
+}
+
+function desativarReconhecimentoVoz() {
+    vozAtiva = false;
+    aguardandoRespostaVoz = false;
+    
+    if (reconhecimentoVoz) {
+        reconhecimentoVoz.stop();
+    }
+    
+    atualizarStatusVozInterface(false, false);
+    alert('Assistente de voz desativado.');
+}
+
+function iniciarReconhecimentoVoz() {
+    if (!vozAtiva) {
+        alert('Ative o reconhecimento de voz primeiro!');
+        return;
+    }
+
+    if (!reconhecimentoVoz) {
+        alert('Reconhecimento de voz não disponível.');
+        return;
+    }
+
+    try {
+        reconhecimentoVoz.start();
+        atualizarStatusVozInterface(true, true);
+    } catch (error) {
+        console.error('Erro ao iniciar reconhecimento de voz:', error);
+    }
+}
+
+function processarComandoVoz(comando) {
+    console.log('Processando comando de voz:', comando);
+    
+    // Converte números por extenso para dígitos
+    const textoProcessado = converterNumerosPorExtenso(comando);
+    
+    // Extrai apenas números do comando
+    const numeros = textoProcessado.match(/\d+/g);
+    
+    if (numeros && numeros.length > 0) {
+        const idColaborador = numeros.join('');
+        
+        // Verifica se é um ID válido (apenas números)
+        if (/^\d+$/.test(idColaborador)) {
+            document.getElementById('idColRetirada').value = idColaborador;
+            
+            // Feedback visual
+            const inputElement = document.getElementById('idColRetirada');
+            inputElement.style.borderColor = '#4CAF50';
+            inputElement.style.backgroundColor = '#1a331a';
+            
+            setTimeout(() => {
+                inputElement.style.borderColor = '';
+                inputElement.style.backgroundColor = '';
+            }, 2000);
+            
+            // Foca no botão de confirmação apropriado
+            setTimeout(() => {
+                const btnRetirada = document.getElementById('btnConfirmarRetirada');
+                const btnDevolucao = document.getElementById('btnDevolverChave');
+                
+                if (btnRetirada.style.display !== 'none') {
+                    btnRetirada.focus();
+                } else if (btnDevolucao.style.display !== 'none') {
+                    btnDevolucao.focus();
+                }
+            }, 100);
+            
+            falarTexto(`ID ${idColaborador} reconhecido. Pressione o botão de confirmação.`);
+            
+        } else {
+            falarTexto('ID inválido. Por favor, diga apenas números.');
+        }
+    } else {
+        falarTexto('Não entendi o ID. Por favor, diga o número do colaborador.');
+    }
+    
+    aguardandoRespostaVoz = false;
+}
+
+function converterNumerosPorExtenso(texto) {
+    const numerosPorExtenso = {
+        'zero': '0', 'um': '1', 'dois': '2', 'três': '3', 'quatro': '4',
+        'cinco': '5', 'seis': '6', 'sete': '7', 'oito': '8', 'nove': '9',
+        'dez': '10', 'onze': '11', 'doze': '12', 'treze': '13', 'catorze': '14',
+        'quinze': '15', 'dezesseis': '16', 'dezessete': '17', 'dezoito': '18',
+        'dezenove': '19', 'vinte': '20'
+    };
+    
+    let textoConvertido = texto.toLowerCase();
+    
+    for (const [extenso, numero] of Object.entries(numerosPorExtenso)) {
+        const regex = new RegExp('\\b' + extenso + '\\b', 'g');
+        textoConvertido = textoConvertido.replace(regex, numero);
+    }
+    
+    return textoConvertido;
+}
+
+function falarTexto(texto) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+function perguntarIdColaborador() {
+    if (vozAtiva) {
+        aguardandoRespostaVoz = true;
+        
+        setTimeout(() => {
+            falarTexto('Qual o ID do colaborador?');
+        }, 500);
+        
+        setTimeout(() => {
+            if (reconhecimentoVoz && aguardandoRespostaVoz) {
+                reconhecimentoVoz.start();
+            }
+        }, 1500);
+    }
+}
+
+function atualizarStatusVozInterface(ativa, ouvindo) {
+    const statusElement = document.getElementById('statusVoz');
+    const btnToggle = document.getElementById('btnToggleVoz');
+    const iconeVoz = document.getElementById('iconeVoz');
+    const voiceStatusElement = document.getElementById('voiceStatus');
+    
+    if (ativa) {
+        if (ouvindo) {
+            statusElement.textContent = 'Ouvindo...';
+            statusElement.className = 'badge bg-success';
+            btnToggle.innerHTML = '<i class="fa fa-microphone-slash"></i> Desativar Voz';
+            btnToggle.className = 'btn btn-warning btn-sm';
+            iconeVoz.className = 'fa fa-microphone text-success';
+            
+            voiceStatusElement.style.display = 'block';
+            voiceStatusElement.className = 'voice-status voice-active';
+            voiceStatusElement.innerHTML = '<i class="fa fa-microphone"></i> Ouvindo... Fale agora';
+        } else {
+            statusElement.textContent = 'Ativo';
+            statusElement.className = 'badge bg-info';
+            btnToggle.innerHTML = '<i class="fa fa-microphone-slash"></i> Desativar Voz';
+            btnToggle.className = 'btn btn-warning btn-sm';
+            iconeVoz.className = 'fa fa-microphone text-info';
+            
+            voiceStatusElement.style.display = 'block';
+            voiceStatusElement.className = 'voice-status voice-inactive';
+            voiceStatusElement.innerHTML = '<i class="fa fa-microphone"></i> Aguardando comando de voz...';
+        }
+    } else {
+        statusElement.textContent = 'Inativo';
+        statusElement.className = 'badge bg-danger';
+        btnToggle.innerHTML = '<i class="fa fa-microphone"></i> Ativar Voz';
+        btnToggle.className = 'btn btn-success btn-sm';
+        iconeVoz.className = 'fa fa-microphone text-muted';
+        
+        voiceStatusElement.style.display = 'none';
+    }
+}
+
+function testarVoz() {
+    if (!vozAtiva) {
+        alert('Ative o reconhecimento de voz primeiro!');
+        return;
+    }
+    
+    falarTexto('Teste de voz funcionando. Diga o ID do colaborador quando solicitado.');
+    
+    // Simula uma pergunta de teste
+    setTimeout(() => {
+        if (vozAtiva) {
+            aguardandoRespostaVoz = true;
+            reconhecimentoVoz.start();
+        }
+    }, 2000);
 }
 
 // ====================================================================
@@ -1003,6 +1361,11 @@ function focarCampoColaborador() {
         const inputColaborador = document.getElementById('idColRetirada');
         if (inputColaborador && document.getElementById('areaConfirmacao').style.display !== 'none') {
             inputColaborador.focus();
+            
+            // Se a voz estiver ativa, pergunta qual o ID do colaborador
+            if (vozAtiva) {
+                perguntarIdColaborador();
+            }
         }
     }, 500);
 }
@@ -1880,6 +2243,9 @@ function reiniciarScanner() {
     document.getElementById("chaveDetectada").innerText = "Nenhuma";
     document.getElementById("idColRetirada").value = "";
     chaveSelecionada = null;
+
+    // Para o reconhecimento de voz se estiver ativo
+    aguardandoRespostaVoz = false;
 
     retomarScanner();
 }
