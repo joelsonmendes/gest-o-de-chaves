@@ -98,7 +98,7 @@
         .table > :not(caption) > * > * {
             background-color: #1e1e1e;
             color: #fff;
-            padding: 0.6rem 0.6rem;
+            padding: 0.6rem 0.6rem; /* <-- Diminui o espaçamento interno das células */
         }
 
         /* =======================================
@@ -121,6 +121,7 @@
             margin-bottom: 20px;
         }
         .sidebar .logo-container img {
+            /* Usando o nome do arquivo da sua imagem retangular (192x192) */
             max-width: 100%;
             height: auto;
             max-height: 60px;
@@ -361,46 +362,6 @@
             border-radius: 3px;
             font-size: 0.8em;
             margin-left: 5px;
-        }
-        .qr-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-        }
-        .report-card {
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .report-card:hover {
-            transform: translateY(-5px);
-            border-color: #fd790d;
-        }
-        .voice-status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .voice-active {
-            background: #1a331a;
-            color: #4CAF50;
-            border: 1px solid #4CAF50;
-        }
-        .voice-inactive {
-            background: #332b1a;
-            color: #FF9800;
-            border: 1px solid #FF9800;
-        }
-        #reader {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        #reader video {
-            width: 100% !important;
-            height: auto !important;
-            border-radius: 10px;
         }
     </style>
 </head>
@@ -782,7 +743,7 @@
                     <i class="fa fa-camera"></i> Scanner de câmera ativo
                 </div>
                 
-                <div id="reader" style="width:100%; max-width:500px; margin: 0 auto;"></div>
+                <div id="reader" style="width:300px; margin: 0 auto;"></div>
 
                 <div class="mt-3 text-center">
                     <button id="btnToggleScanner" class="btn btn-outline-warning btn-sm" onclick="toggleScanner()" style="display: none;">
@@ -1437,14 +1398,8 @@ function iniciarSistema() {
     
     // Configurar Firestore se ainda não estiver configurado
     if (!db) {
-        try {
-            db = firebase.firestore();
-            console.log('Firestore configurado');
-        } catch (error) {
-            console.error('Erro ao configurar Firestore:', error);
-            alert('Erro ao conectar com o banco de dados. Verifique sua conexão.');
-            return;
-        }
+        db = firebase.firestore();
+        console.log('Firestore configurado');
     }
 
     // Configurar detecção de conectividade
@@ -1462,18 +1417,17 @@ function iniciarSistema() {
     document.getElementById("btnConfirmarExclusao").addEventListener("click", confirmarExclusaoColaborador);
 
     // Tenta sincronizar dados pendentes ao iniciar
-    setTimeout(() => {
-        if (isOnline) {
-            sincronizarDadosPendentes();
-        }
-    }, 2000);
+    setTimeout(sincronizarDadosPendentes, 2000);
     
     console.log('Sistema iniciado com sucesso!');
 }
 
 // ====================================================================
-// FUNÇÕES DO SISTEMA (CORRIGIDAS)
+// FUNÇÕES DO SISTEMA (mantidas do código original)
 // ====================================================================
+
+// Adicione aqui as funções do sistema original que não foram incluídas acima
+// como: configurarDetecaoConexao, carregarDadosOffline, etc.
 
 function configurarDetecaoConexao() {
     isOnline = navigator.onLine;
@@ -1499,29 +1453,20 @@ function atualizarStatusConexao() {
     if (isOnline) {
         onlineIndicator.style.display = 'block';
         offlineIndicator.style.display = 'none';
-        if (statusConexao) {
-            statusConexao.textContent = 'Online';
-            statusConexao.className = 'badge bg-success';
-        }
+        statusConexao.textContent = 'Online';
+        statusConexao.className = 'badge bg-success';
     } else {
         onlineIndicator.style.display = 'none';
         offlineIndicator.style.display = 'block';
-        if (statusConexao) {
-            statusConexao.textContent = 'Offline';
-            statusConexao.className = 'badge bg-danger';
-        }
+        statusConexao.textContent = 'Offline';
+        statusConexao.className = 'badge bg-danger';
     }
 }
 
 function carregarDadosOffline() {
     const pendentesSalvos = localStorage.getItem('historicoPendente');
     if (pendentesSalvos) {
-        try {
-            historicoPendente = JSON.parse(pendentesSalvos);
-        } catch (e) {
-            console.error('Erro ao carregar dados offline:', e);
-            historicoPendente = [];
-        }
+        historicoPendente = JSON.parse(pendentesSalvos);
     }
 
     const ultimaSync = localStorage.getItem('ultimaSincronizacao');
@@ -1538,11 +1483,8 @@ function salvarDadosOffline() {
 }
 
 function atualizarContadoresOffline() {
-    const contadorPendentes = document.getElementById('contadorPendentes');
-    const pendentesSync = document.getElementById('pendentesSync');
-    
-    if (contadorPendentes) contadorPendentes.textContent = historicoPendente.length;
-    if (pendentesSync) pendentesSync.textContent = historicoPendente.length;
+    document.getElementById('contadorPendentes').textContent = historicoPendente.length;
+    document.getElementById('pendentesSync').textContent = historicoPendente.length;
     atualizarListaPendentes();
 }
 
@@ -1592,111 +1534,33 @@ function atualizarStatusChaveLocal(chave, colaborador, acao) {
 
 async function sincronizarDadosPendentes() {
     if (!currentUser) {
-        alert('Você precisa estar logado para sincronizar.');
+        console.error('Usuário não autenticado');
         return;
     }
     
-    if (historicoPendente.length === 0) {
-        alert('Não há dados pendentes para sincronizar.');
-        return;
-    }
-    
-    if (!isOnline) {
-        alert('Você está offline. Conecte-se à internet para sincronizar.');
-        return;
-    }
-    
-    if (!db) {
-        alert('Banco de dados não inicializado.');
-        return;
-    }
-    
-    const syncStatus = document.getElementById('syncStatus');
-    if (syncStatus) {
-        syncStatus.style.display = 'block';
-        syncStatus.innerHTML = '<i class="fa fa-refresh fa-spin"></i> Sincronizando dados pendentes...';
-    }
+    if (!isOnline || historicoPendente.length === 0) return;
+
+    document.getElementById('syncStatus').style.display = 'block';
     
     let sucessos = 0;
     let erros = 0;
-    const total = historicoPendente.length;
-    
-    // Criar uma cópia do array para evitar problemas de iteração
-    const pendentesParaSincronizar = [...historicoPendente];
-    
-    for (let i = 0; i < pendentesParaSincronizar.length; i++) {
-        const movimentacao = pendentesParaSincronizar[i];
+
+    for (let i = historicoPendente.length - 1; i >= 0; i--) {
+        const movimentacao = historicoPendente[i];
         
-        try {
-            // 1. Sincronizar no histórico
-            await db.collection("historico").add({
-                chave: movimentacao.chave,
-                nomeChave: movimentacao.nomeChave,
-                colaborador: movimentacao.colaborador,
-                idColaborador: movimentacao.idColaborador,
-                acao: movimentacao.acao,
-                data: movimentacao.data,
-                dataTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                usuarioId: currentUser.uid,
-                usuarioEmail: currentUser.email
-            });
-            
-            // 2. Atualizar status da chave no Firestore
-            const chave = chaves.find(c => c.id === movimentacao.chave);
-            if (chave && chave.idDoc) {
-                if (movimentacao.acao === "RETIRADA") {
-                    await db.collection("chaves").doc(chave.idDoc).update({
-                        status: "Retirada por " + movimentacao.colaborador,
-                        ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                } else if (movimentacao.acao === "DEVOLUÇÃO") {
-                    await db.collection("chaves").doc(chave.idDoc).update({
-                        status: "Disponível",
-                        ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-            }
-            
-            // 3. Remover do array de pendentes
-            historicoPendente = historicoPendente.filter(m => m.id !== movimentacao.id);
+        if (await sincronizarMovimentacao(movimentacao)) {
             sucessos++;
-            
-            // Atualizar contador em tempo real
-            if (syncStatus) {
-                syncStatus.innerHTML = `<i class="fa fa-refresh fa-spin"></i> Sincronizando... (${sucessos}/${total})`;
-            }
-            
-        } catch (error) {
-            console.error("Erro ao sincronizar movimentação:", error);
+        } else {
             erros++;
-            
-            // Se houver erro de rede, parar a sincronização
-            if (error.code === 'unavailable' || error.message.includes('network')) {
-                alert('Erro de rede durante a sincronização. Alguns dados podem não ter sido sincronizados.');
-                break;
-            }
+            break;
         }
     }
+
+    document.getElementById('syncStatus').style.display = 'none';
     
-    // Salvar estado atualizado no localStorage
-    salvarDadosOffline();
-    
-    // Atualizar última sincronização
-    localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
-    const ultimaSyncElement = document.getElementById('ultimaSync');
-    if (ultimaSyncElement) {
-        ultimaSyncElement.textContent = new Date().toLocaleString('pt-BR');
-    }
-    
-    if (syncStatus) {
-        syncStatus.style.display = 'none';
-    }
-    
-    // Mostrar resumo
     if (erros === 0) {
-        alert(`Sincronização concluída! ${sucessos} registro(s) sincronizado(s) com sucesso.`);
-    } else {
-        alert(`Sincronização parcial: ${sucessos} registro(s) sincronizado(s), ${erros} erro(s).`);
+        localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
+        document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
     }
 }
 
@@ -1713,7 +1577,7 @@ async function sincronizarMovimentacao(movimentacao) {
         });
 
         const chave = chaves.find(c => c.id === movimentacao.chave);
-        if (chave && chave.idDoc) {
+        if (chave) {
             if (movimentacao.acao === "RETIRADA") {
                 await db.collection("chaves").doc(chave.idDoc).update({
                     status: "Retirada por " + movimentacao.colaborador
@@ -1737,15 +1601,13 @@ async function sincronizarMovimentacao(movimentacao) {
 
 function atualizarListaPendentes() {
     const lista = document.getElementById('listaPendentes');
-    if (!lista) return;
-    
     lista.innerHTML = '';
 
     historicoPendente.forEach(movimentacao => {
         const acaoClass = movimentacao.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
         lista.innerHTML += `
             <tr>
-                <td>${movimentacao.chave} - ${movimentacao.nomeChave || ''}</td>
+                <td>${movimentacao.chave} - ${movimentacao.nomeChave}</td>
                 <td>${movimentacao.colaborador}</td>
                 <td class="${acaoClass}">${movimentacao.acao}</td>
                 <td>${movimentacao.data}</td>
@@ -1777,7 +1639,7 @@ function carregarChavesFirebase() {
         chaves = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
         
         contadorChave = chaves.reduce((max, c) => {
-            const num = parseInt(c.id.split('-')[1]) || 0;
+            const num = parseInt(c.id.split('-')[1]);
             return num > max ? num : max;
         }, 0);
         
@@ -1798,15 +1660,11 @@ function carregarColaboradoresFirebase() {
         colaboradores = snapshot.docs.map(doc => ({ idDoc: doc.id, ...doc.data() }));
 
         contadorColaborador = colaboradores.reduce((max, c) => {
-            const num = parseInt(c.id) || 0;
+            const num = parseInt(c.id);
             return num > max ? num : max;
         }, 0);
         
-        const ultimoColID = document.getElementById("ultimoColID");
-        if (ultimoColID) {
-            ultimoColID.innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
-        }
-        
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
         atualizarListas();
         atualizarEstatisticas();
     }, error => {
@@ -1835,7 +1693,7 @@ function salvarMovimentacao(chave, colaborador, acao) {
         return;
     }
     
-    if (isOnline && db) {
+    if (isOnline) {
         db.collection("historico").add({
             chave: chave.id,
             colaborador: colaborador.nome,
@@ -1952,7 +1810,7 @@ function confirmarRetirada() {
         return;
     }
 
-    if (isOnline && db) {
+    if (isOnline) {
         db.collection("chaves").doc(chave.idDoc).update({
             status: "Retirada por " + colab.nome
         })
@@ -2014,7 +1872,7 @@ function confirmarDevolucao() {
         }
     }
 
-    if (isOnline && db) {
+    if (isOnline) {
         db.collection("chaves").doc(chave.idDoc).update({
             status: "Disponível"
         })
@@ -2093,10 +1951,7 @@ function showPage(page, event) {
     }
 
     if (page === 'colaboradores') {
-        const ultimoColID = document.getElementById("ultimoColID");
-        if (ultimoColID) {
-            ultimoColID.innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
-        }
+        document.getElementById("ultimoColID").innerText = contadorColaborador > 0 ? contadorColaborador.toString().padStart(2, "0") : "Nenhum";
     }
 
     if (page === 'offline') {
@@ -2110,9 +1965,6 @@ function showPage(page, event) {
     if (page === 'relatorios') {
         atualizarEstatisticas();
     }
-    
-    // Adicionar esta linha para garantir que a página seja rolada para o topo
-    window.scrollTo(0, 0);
 }
 
 function iniciarScanner() {
@@ -2129,13 +1981,13 @@ function iniciarScanner() {
         "reader", 
         { 
             fps: 10, 
-            qrbox: { width: 250, height: 250 }, 
+            qrbox: 250, 
             disableFlip: false,
             facingMode: "environment",
             videoConstraints: {
                 facingMode: { ideal: "environment" }, 
-                width: { ideal: 640 },
-                height: { ideal: 480 }
+                width: { max: 480 },
+                height: { max: 480 }
             }
         }
     );
@@ -2145,8 +1997,7 @@ function iniciarScanner() {
     scannerPausado = false;
     
     atualizarStatusScanner();
-    const toggleButton = document.getElementById("btnToggleScanner");
-    if (toggleButton) toggleButton.style.display = "block";
+    document.getElementById("btnToggleScanner").style.display = "block";
 }
 
 function pararScanner() {
@@ -2198,22 +2049,18 @@ function atualizarStatusScanner() {
     const toggleButton = document.getElementById("btnToggleScanner");
     
     if (scannerAtivo) {
-        if (statusElement) statusElement.style.display = "block";
+        statusElement.style.display = "block";
         if (scannerPausado) {
-            if (statusElement) {
-                statusElement.className = "scanner-status scanner-paused";
-                statusElement.innerHTML = "<i class='fa fa-pause'></i> Scanner pausado";
-            }
-            if (toggleButton) toggleButton.innerHTML = "<i class='fa fa-play'></i> Retomar Scanner";
+            statusElement.className = "scanner-status scanner-paused";
+            statusElement.innerHTML = "<i class='fa fa-pause'></i> Scanner pausado";
+            toggleButton.innerHTML = "<i class='fa fa-play'></i> Retomar Scanner";
         } else {
-            if (statusElement) {
-                statusElement.className = "scanner-status scanner-active";
-                statusElement.innerHTML = "<i class='fa fa-camera'></i> Scanner ativo";
-            }
-            if (toggleButton) toggleButton.innerHTML = "<i class='fa fa-pause'></i> Pausar Scanner";
+            statusElement.className = "scanner-status scanner-active";
+            statusElement.innerHTML = "<i class='fa fa-camera'></i> Scanner ativo";
+            toggleButton.innerHTML = "<i class='fa fa-pause'></i> Pausar Scanner";
         }
     } else {
-        if (statusElement) statusElement.style.display = "none";
+        statusElement.style.display = "none";
     }
 }
 
@@ -2223,12 +2070,8 @@ function onScanSuccess(decodedText) {
     const chave = chaves.find(c => c.id === decodedText);
 
     if (!chave) {
-        const chaveDetectada = document.getElementById("chaveDetectada");
-        if (chaveDetectada) {
-            chaveDetectada.innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
-        }
-        const areaConfirmacao = document.getElementById("areaConfirmacao");
-        if (areaConfirmacao) areaConfirmacao.style.display = "none";
+        document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
+        document.getElementById("areaConfirmacao").style.display = "none";
         alert("QR Code lido, mas nenhuma chave correspondente foi encontrada no sistema.");
         
         setTimeout(retomarScanner, 2000);
@@ -2236,41 +2079,26 @@ function onScanSuccess(decodedText) {
     }
 
     chaveSelecionada = decodedText;
-    const chaveDetectada = document.getElementById("chaveDetectada");
-    if (chaveDetectada) {
-        chaveDetectada.innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-    }
-    const areaConfirmacao = document.getElementById("areaConfirmacao");
-    if (areaConfirmacao) areaConfirmacao.style.display = "block";
+    document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+    document.getElementById("areaConfirmacao").style.display = "block";
 
     const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
     
-    const btnConfirmarRetirada = document.getElementById("btnConfirmarRetirada");
-    const btnDevolverChave = document.getElementById("btnDevolverChave");
-    const idColRetirada = document.getElementById("idColRetirada");
-    
-    if (btnConfirmarRetirada) btnConfirmarRetirada.style.display = isDisponivel ? "block" : "none";
-    if (btnDevolverChave) btnDevolverChave.style.display = isDisponivel ? "none" : "block";
-    if (idColRetirada) {
-        idColRetirada.placeholder = isDisponivel ? 
-            "ID do colaborador que vai RETIRAR" : 
-            "ID do colaborador que vai DEVOLVER";
-    }
+    document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
+    document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
+    document.getElementById("idColRetirada").placeholder = isDisponivel ? 
+        "ID do colaborador que vai RETIRAR" : 
+        "ID do colaborador que vai DEVOLVER";
 }
 
 function onScanError(errorMessage) {
     // Erros são esperados durante a operação normal do scanner
-    console.log("Scanner error:", errorMessage);
 }
 
 function reiniciarScanner() {
-    const areaConfirmacao = document.getElementById("areaConfirmacao");
-    const chaveDetectada = document.getElementById("chaveDetectada");
-    const idColRetirada = document.getElementById("idColRetirada");
-    
-    if (areaConfirmacao) areaConfirmacao.style.display = "none";
-    if (chaveDetectada) chaveDetectada.innerText = "Nenhuma";
-    if (idColRetirada) idColRetirada.value = "";
+    document.getElementById("areaConfirmacao").style.display = "none";
+    document.getElementById("chaveDetectada").innerText = "Nenhuma";
+    document.getElementById("idColRetirada").value = "";
     chaveSelecionada = null;
 
     retomarScanner();
@@ -2278,8 +2106,6 @@ function reiniciarScanner() {
 
 function gerarQRCode(texto) {
     let area = document.getElementById("qrCodeArea");
-    if (!area) return;
-    
     area.innerHTML = "";
 
     const qrDiv = document.createElement('div');
@@ -2328,63 +2154,53 @@ function atualizarListas() {
     ).length;
     const totalRetiradas = chaves.length - totalDisponiveis;
 
-    const totalChaves = document.getElementById("totalChaves");
-    const chavesDisponiveis = document.getElementById("chavesDisponiveis");
-    const chavesRetiradas = document.getElementById("chavesRetiradas");
-    const totalCol = document.getElementById("totalCol");
-    const totalHist = document.getElementById("totalHist");
-    
-    if (totalChaves) totalChaves.innerText = chaves.length;
-    if (chavesDisponiveis) chavesDisponiveis.innerText = totalDisponiveis;
-    if (chavesRetiradas) chavesRetiradas.innerText = totalRetiradas;
-    if (totalCol) totalCol.innerText = colaboradores.length;
-    if (totalHist) totalHist.innerText = historico.length + historicoPendente.length;
+    document.getElementById("totalChaves").innerText = chaves.length;
+    document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
+    document.getElementById("chavesRetiradas").innerText = totalRetiradas;
+    document.getElementById("totalCol").innerText = colaboradores.length;
+    document.getElementById("totalHist").innerText = historico.length + historicoPendente.length;
 
     renderizarChaves(chaves);
 
     let colList = document.getElementById("listaColaboradores");
-    if (colList) {
-        colList.innerHTML = "";
-        colaboradores.forEach((c, idx) => {
-            colList.innerHTML += `
-                <tr>
-                    <td>${c.id}</td>
-                    <td>${c.nome}</td>
-                    <td>
-                        <button class="btn btn-sm btn-success me-1" onclick="abrirEdicao('colaborador', ${idx})">
-                            <i class="fa fa-edit"></i> Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoColaborador(${idx})">
-                            <i class="fa fa-trash"></i> Excluir
-                        </button>
-                    </td>
-                </tr>`;
-        });
-    }
+    colList.innerHTML = "";
+    colaboradores.forEach((c, idx) => {
+        colList.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome}</td>
+                <td>
+                    <button class="btn btn-sm btn-success me-1" onclick="abrirEdicao('colaborador', ${idx})">
+                        <i class="fa fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoColaborador(${idx})">
+                        <i class="fa fa-trash"></i> Excluir
+                    </button>
+                </td>
+            </tr>`;
+    });
 
     let hist = document.getElementById("listaHistorico");
-    if (hist) {
-        hist.innerHTML = "";
+    hist.innerHTML = "";
+    
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+    
+    todosRegistros.forEach(h => {
+        const acaoClass = h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+        const status = h.sincronizado === false ? '<span class="pending-sync">Pendente</span>' : '<span class="badge bg-success">Sincronizado</span>';
+        const usuario = h.usuarioEmail || 'Desconhecido';
         
-        const todosRegistros = [...historico, ...historicoPendente];
-        todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
-        
-        todosRegistros.forEach(h => {
-            const acaoClass = h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
-            const status = h.sincronizado === false ? '<span class="pending-sync">Pendente</span>' : '<span class="badge bg-success">Sincronizado</span>';
-            const usuario = h.usuarioEmail || 'Desconhecido';
-            
-            hist.innerHTML += `
-                <tr>
-                    <td>${h.chave}</td>
-                    <td>${h.colaborador}</td>
-                    <td class="${acaoClass}">${h.acao}</td>
-                    <td>${h.data}</td>
-                    <td>${status}</td>
-                    <td>${usuario}</td>
-                </tr>`;
-        });
-    }
+        hist.innerHTML += `
+            <tr>
+                <td>${h.chave}</td>
+                <td>${h.colaborador}</td>
+                <td class="${acaoClass}">${h.acao}</td>
+                <td>${h.data}</td>
+                <td>${status}</td>
+                <td>${usuario}</td>
+            </tr>`;
+    });
 }
 
 function atualizarEstatisticas() {
@@ -2393,21 +2209,14 @@ function atualizarEstatisticas() {
     ).length;
     const totalMovimentacoes = historico.length + historicoPendente.length;
 
-    const statChavesTotal = document.getElementById('statChavesTotal');
-    const statChavesDisponiveis = document.getElementById('statChavesDisponiveis');
-    const statColaboradoresTotal = document.getElementById('statColaboradoresTotal');
-    const statMovimentacoesTotal = document.getElementById('statMovimentacoesTotal');
-    
-    if (statChavesTotal) statChavesTotal.textContent = chaves.length;
-    if (statChavesDisponiveis) statChavesDisponiveis.textContent = totalDisponiveis;
-    if (statColaboradoresTotal) statColaboradoresTotal.textContent = colaboradores.length;
-    if (statMovimentacoesTotal) statMovimentacoesTotal.textContent = totalMovimentacoes;
+    document.getElementById('statChavesTotal').textContent = chaves.length;
+    document.getElementById('statChavesDisponiveis').textContent = totalDisponiveis;
+    document.getElementById('statColaboradoresTotal').textContent = colaboradores.length;
+    document.getElementById('statMovimentacoesTotal').textContent = totalMovimentacoes;
 }
 
 function renderizarChaves(chavesParaExibir) {
     let lista = document.getElementById("listaChaves");
-    if (!lista) return;
-    
     lista.innerHTML = "";
     chavesParaExibir.forEach((c, idx) => {
         const indexOriginal = chaves.findIndex(item => item.id === c.id); 
@@ -2451,23 +2260,18 @@ function iniciarRetiradaRapida(chaveId) {
         return;
     }
     
-    showPage('qr', new Event('click')); 
+    showPage('qr'); 
     
     const chave = chaves.find(c => c.id === chaveId);
     
     if (chave) {
         chaveSelecionada = chaveId;
-        const chaveDetectada = document.getElementById("chaveDetectada");
-        const areaConfirmacao = document.getElementById("areaConfirmacao");
-        const btnConfirmarRetirada = document.getElementById("btnConfirmarRetirada");
-        const btnDevolverChave = document.getElementById("btnDevolverChave");
-        const idColRetirada = document.getElementById("idColRetirada");
-        
-        if (chaveDetectada) chaveDetectada.innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-        if (areaConfirmacao) areaConfirmacao.style.display = "block";
-        if (btnConfirmarRetirada) btnConfirmarRetirada.style.display = "block";
-        if (btnDevolverChave) btnDevolverChave.style.display = "none";
-        if (idColRetirada) idColRetirada.placeholder = "ID do colaborador que vai RETIRAR";
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
+
+        document.getElementById("btnConfirmarRetirada").style.display = "block";
+        document.getElementById("btnDevolverChave").style.display = "none";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
         
         pausarScanner();
     }
@@ -2479,23 +2283,18 @@ function iniciarDevolucaoRapida(chaveId) {
         return;
     }
     
-    showPage('qr', new Event('click')); 
+    showPage('qr'); 
     
     const chave = chaves.find(c => c.id === chaveId);
     
     if (chave) {
         chaveSelecionada = chaveId;
-        const chaveDetectada = document.getElementById("chaveDetectada");
-        const areaConfirmacao = document.getElementById("areaConfirmacao");
-        const btnConfirmarRetirada = document.getElementById("btnConfirmarRetirada");
-        const btnDevolverChave = document.getElementById("btnDevolverChave");
-        const idColRetirada = document.getElementById("idColRetirada");
-        
-        if (chaveDetectada) chaveDetectada.innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-        if (areaConfirmacao) areaConfirmacao.style.display = "block";
-        if (btnConfirmarRetirada) btnConfirmarRetirada.style.display = "none";
-        if (btnDevolverChave) btnDevolverChave.style.display = "block";
-        if (idColRetirada) idColRetirada.placeholder = "ID do colaborador que vai DEVOLVER";
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
+
+        document.getElementById("btnConfirmarRetirada").style.display = "none";
+        document.getElementById("btnDevolverChave").style.display = "block";
+        document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
         
         pausarScanner();
     }
@@ -2511,508 +2310,15 @@ function abrirEdicao(tipo, indexOriginal) {
     itemEditando = indexOriginal;
     const item = tipo === 'chave' ? chaves[indexOriginal] : colaboradores[indexOriginal];
     
-    const modalTitulo = document.getElementById("modalTitulo");
-    const modalInput = document.getElementById("modalInput");
-    
-    if (modalTitulo) modalTitulo.innerText = `Editar ${tipo === 'chave' ? 'Chave' : 'Colaborador'} (ID: ${item.id})`;
-    if (modalInput) modalInput.value = item.nome;
+    document.getElementById("modalTitulo").innerText = `Editar ${tipo === 'chave' ? 'Chave' : 'Colaborador'} (ID: ${item.id})`;
+    document.getElementById("modalInput").value = item.nome;
     
     const modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
     modalInstance.show();
 }
 
 // ====================================================================
-// FUNÇÕES DE RELATÓRIOS (IMPLEMENTADAS)
-// ====================================================================
-
-function gerarRelatorioChaves() {
-    if (!currentUser) {
-        alert('Você precisa estar logado para gerar relatórios.');
-        return;
-    }
-    
-    if (chaves.length === 0) {
-        alert('Não há chaves cadastradas para gerar relatório.');
-        return;
-    }
-    
-    let csv = 'ID;Nome;Status;Data Criação;Usuário Criador\n';
-    
-    chaves.forEach(chave => {
-        csv += `${chave.id};${chave.nome};${chave.status};${chave.dataCriacao || 'N/A'};${chave.usuarioCriador || 'N/A'}\n`;
-    });
-    
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_chaves_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert('Relatório de chaves gerado com sucesso!');
-}
-
-function gerarRelatorioColaboradores() {
-    if (!currentUser) {
-        alert('Você precisa estar logado para gerar relatórios.');
-        return;
-    }
-    
-    if (colaboradores.length === 0) {
-        alert('Não há colaboradores cadastrados para gerar relatório.');
-        return;
-    }
-    
-    let csv = 'ID;Nome;Data Criação;Usuário Criador\n';
-    
-    colaboradores.forEach(colab => {
-        csv += `${colab.id};${colab.nome};${colab.dataCriacao || 'N/A'};${colab.usuarioCriador || 'N/A'}\n`;
-    });
-    
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_colaboradores_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert('Relatório de colaboradores gerado com sucesso!');
-}
-
-function gerarRelatorioHistorico() {
-    if (!currentUser) {
-        alert('Você precisa estar logado para gerar relatórios.');
-        return;
-    }
-    
-    const todosRegistros = [...historico, ...historicoPendente];
-    
-    if (todosRegistros.length === 0) {
-        alert('Não há histórico para gerar relatório.');
-        return;
-    }
-    
-    let csv = 'Chave;Nome Chave;Colaborador;ID Colaborador;Ação;Data;Status Sincronização;Usuário\n';
-    
-    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
-    
-    todosRegistros.forEach(registro => {
-        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
-        const usuario = registro.usuarioEmail || 'Desconhecido';
-        const nomeChave = registro.nomeChave || registro.chave;
-        
-        csv += `${registro.chave};${nomeChave};${registro.colaborador};${registro.idColaborador || 'N/A'};${registro.acao};${registro.data};${status};${usuario}\n`;
-    });
-    
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_historico_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert('Relatório histórico gerado com sucesso!');
-}
-
-function gerarRelatorioCompleto() {
-    if (!currentUser) {
-        alert('Você precisa estar logado para gerar relatórios.');
-        return;
-    }
-    
-    let csv = '=== RELATÓRIO COMPLETO DO SISTEMA ===\n';
-    csv += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n`;
-    csv += `Usuário: ${currentUser.email}\n\n`;
-    
-    // Seção de Chaves
-    csv += '=== CHAVES CADASTRADAS ===\n';
-    csv += 'ID;Nome;Status;Data Criação;Usuário Criador\n';
-    chaves.forEach(chave => {
-        csv += `${chave.id};${chave.nome};${chave.status};${chave.dataCriacao || 'N/A'};${chave.usuarioCriador || 'N/A'}\n`;
-    });
-    
-    // Seção de Colaboradores
-    csv += '\n=== COLABORADORES CADASTRADOS ===\n';
-    csv += 'ID;Nome;Data Criação;Usuário Criador\n';
-    colaboradores.forEach(colab => {
-        csv += `${colab.id};${colab.nome};${colab.dataCriacao || 'N/A'};${colab.usuarioCriador || 'N/A'}\n`;
-    });
-    
-    // Seção de Histórico
-    csv += '\n=== HISTÓRICO DE MOVIMENTAÇÕES ===\n';
-    csv += 'Chave;Colaborador;Ação;Data;Status Sincronização;Usuário\n';
-    
-    const todosRegistros = [...historico, ...historicoPendente];
-    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
-    
-    todosRegistros.forEach(registro => {
-        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
-        const usuario = registro.usuarioEmail || 'Desconhecido';
-        
-        csv += `${registro.chave};${registro.colaborador};${registro.acao};${registro.data};${status};${usuario}\n`;
-    });
-    
-    // Estatísticas
-    const totalDisponiveis = chaves.filter(c => 
-        c.status === "Disponível" || c.status === "Disponível (Offline)"
-    ).length;
-    const totalMovimentacoes = historico.length + historicoPendente.length;
-    
-    csv += '\n=== ESTATÍSTICAS ===\n';
-    csv += `Total de Chaves: ${chaves.length}\n`;
-    csv += `Chaves Disponíveis: ${totalDisponiveis}\n`;
-    csv += `Chaves Retiradas: ${chaves.length - totalDisponiveis}\n`;
-    csv += `Total de Colaboradores: ${colaboradores.length}\n`;
-    csv += `Total de Movimentações: ${totalMovimentacoes}\n`;
-    csv += `Movimentações Pendentes: ${historicoPendente.length}\n`;
-    
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_completo_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert('Relatório completo gerado com sucesso!');
-}
-
-// ====================================================================
-// FUNÇÕES DE QR CODES (IMPLEMENTADAS)
-// ====================================================================
-
-function gerarTodosQRCodes() {
-    const container = document.getElementById('qrCodesContainer');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (chaves.length === 0) {
-        container.innerHTML = '<p class="text-muted">Nenhuma chave cadastrada para gerar QR Codes.</p>';
-        return;
-    }
-    
-    chaves.forEach(chave => {
-        const qrCard = document.createElement('div');
-        qrCard.className = 'card mb-3';
-        qrCard.style.width = '200px';
-        qrCard.style.display = 'inline-block';
-        qrCard.style.margin = '10px';
-        qrCard.style.verticalAlign = 'top';
-        
-        qrCard.innerHTML = `
-            <div class="card-body text-center">
-                <h6 class="card-title">${chave.id}</h6>
-                <p class="card-text small">${chave.nome}</p>
-                <div id="qr-${chave.id}"></div>
-                <button class="btn btn-sm btn-success mt-2" onclick="baixarQRCode('${chave.id}')">
-                    <i class="fa fa-download"></i> Baixar
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(qrCard);
-        
-        // Gerar QR Code
-        setTimeout(() => {
-            const qrDiv = document.getElementById(`qr-${chave.id}`);
-            if (qrDiv) {
-                qrDiv.innerHTML = '';
-                new QRCode(qrDiv, { 
-                    text: chave.id, 
-                    width: 120, 
-                    height: 120,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            }
-        }, 100);
-    });
-}
-
-function baixarQRCode(chaveId) {
-    const chave = chaves.find(c => c.id === chaveId);
-    if (!chave) return;
-    
-    const qrDiv = document.getElementById(`qr-${chaveId}`);
-    if (!qrDiv) return;
-    
-    const canvas = qrDiv.querySelector('canvas');
-    if (!canvas) {
-        alert('QR Code ainda não foi gerado. Aguarde alguns segundos.');
-        return;
-    }
-    
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = `QRCode_${chaveId}.png`;
-    link.click();
-}
-
-async function baixarTodosQRCodes() {
-    if (chaves.length === 0) {
-        alert('Não há chaves para gerar QR Codes.');
-        return;
-    }
-    
-    alert('A funcionalidade de baixar todos os QR Codes em ZIP requer a biblioteca JSZip. Esta funcionalidade será implementada em breve.');
-    
-    // Implementação simplificada - baixa cada QR Code individualmente
-    chaves.forEach((chave, index) => {
-        setTimeout(() => {
-            baixarQRCode(chave.id);
-        }, index * 500); // Delay para evitar bloqueio do navegador
-    });
-}
-
-function imprimirQRCodes() {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>QR Codes das Chaves</title>
-                <style>
-                    body { font-family: Arial, sans-serif; }
-                    .qr-container { display: flex; flex-wrap: wrap; gap: 20px; }
-                    .qr-item { text-align: center; margin: 10px; }
-                    .qr-item canvas { width: 150px; height: 150px; }
-                </style>
-            </head>
-            <body>
-                <h1>QR Codes das Chaves</h1>
-                <div class="qr-container">
-    `);
-    
-    chaves.forEach(chave => {
-        // Criar canvas temporário para o QR Code
-        const tempDiv = document.createElement('div');
-        new QRCode(tempDiv, { 
-            text: chave.id, 
-            width: 150, 
-            height: 150,
-            colorDark: "#000000",
-            colorLight: "#ffffff"
-        });
-        
-        setTimeout(() => {
-            const canvas = tempDiv.querySelector('canvas');
-            if (canvas) {
-                const dataUrl = canvas.toDataURL('image/png');
-                printWindow.document.write(`
-                    <div class="qr-item">
-                        <h3>${chave.id}</h3>
-                        <p>${chave.nome}</p>
-                        <img src="${dataUrl}" alt="QR Code ${chave.id}">
-                    </div>
-                `);
-            }
-        }, 100);
-    });
-    
-    printWindow.document.write(`
-                </div>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        window.onafterprint = function() {
-                            window.close();
-                        };
-                    };
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-}
-
-// ====================================================================
-// FUNÇÕES AUXILIARES FALTANTES
-// ====================================================================
-
-function solicitarExclusaoColaborador(index) {
-    if (!currentUser) {
-        alert('Você precisa estar logado para excluir colaboradores.');
-        return;
-    }
-    
-    const colaborador = colaboradores[index];
-    if (!colaborador) return;
-    
-    colaboradorParaExcluir = colaborador;
-    
-    const mensagemExclusao = document.getElementById('mensagemExclusao');
-    if (mensagemExclusao) {
-        mensagemExclusao.textContent = 
-            `Tem certeza que deseja excluir o colaborador "${colaborador.nome}" (ID: ${colaborador.id})?`;
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
-    modal.show();
-}
-
-function confirmarExclusaoColaborador() {
-    if (!colaboradorParaExcluir || !colaboradorParaExcluir.idDoc) {
-        alert('Erro: Colaborador não encontrado.');
-        return;
-    }
-    
-    db.collection("colaboradores").doc(colaboradorParaExcluir.idDoc).delete()
-        .then(() => {
-            alert(`Colaborador ${colaboradorParaExcluir.nome} excluído com sucesso!`);
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarExclusao'));
-            if (modal) modal.hide();
-            
-            colaboradorParaExcluir = null;
-        })
-        .catch(error => {
-            console.error("Erro ao excluir colaborador:", error);
-            alert("Erro ao excluir colaborador. Verifique o console.");
-        });
-}
-
-// ====================================================================
-// FUNÇÕES AUXILIARES PARA LEITOR DE CÓDIGO DE BARRAS
-// ====================================================================
-
-function toggleLeitor() {
-    const statusLeitor = document.getElementById('statusLeitor');
-    const btnToggleLeitor = document.getElementById('btnToggleLeitor');
-    const iconeLeitor = document.getElementById('iconeLeitor');
-    
-    if (statusLeitor.textContent === 'Desconectado') {
-        statusLeitor.textContent = 'Conectado';
-        statusLeitor.className = 'badge bg-success';
-        btnToggleLeitor.innerHTML = '<i class="fa fa-plug"></i> Desconectar Leitor';
-        btnToggleLeitor.className = 'btn btn-danger btn-sm';
-        iconeLeitor.className = 'fa fa-barcode text-success';
-        alert('Leitor conectado! Agora você pode escanear códigos de barras dos IDs dos colaboradores.');
-    } else {
-        statusLeitor.textContent = 'Desconectado';
-        statusLeitor.className = 'badge bg-danger';
-        btnToggleLeitor.innerHTML = '<i class="fa fa-plug"></i> Conectar Leitor';
-        btnToggleLeitor.className = 'btn btn-success btn-sm';
-        iconeLeitor.className = 'fa fa-barcode text-muted';
-    }
-}
-
-function testarLeitor() {
-    // Simula a leitura de um código de barras
-    const idColInput = document.getElementById('idColRetirada');
-    if (idColInput) {
-        idColInput.value = '01'; // Valor de teste
-        alert('Leitor testado! Valor simulado: 01');
-    }
-}
-
-function toggleReconhecimentoVoz() {
-    const statusVoz = document.getElementById('statusVoz');
-    const btnToggleVoz = document.getElementById('btnToggleVoz');
-    const iconeVoz = document.getElementById('iconeVoz');
-    const voiceStatus = document.getElementById('voiceStatus');
-    
-    if (!statusVoz || !btnToggleVoz || !iconeVoz) return;
-    
-    if (statusVoz.textContent === 'Inativo') {
-        statusVoz.textContent = 'Ativo';
-        statusVoz.className = 'badge bg-success';
-        btnToggleVoz.innerHTML = '<i class="fa fa-microphone-slash"></i> Desativar Voz';
-        btnToggleVoz.className = 'btn btn-danger btn-sm';
-        iconeVoz.className = 'fa fa-microphone text-success';
-        if (voiceStatus) {
-            voiceStatus.style.display = 'block';
-            voiceStatus.className = 'voice-status voice-active';
-        }
-        alert('Reconhecimento de voz ativado! Após escanear uma chave, fale o ID do colaborador.');
-    } else {
-        statusVoz.textContent = 'Inativo';
-        statusVoz.className = 'badge bg-danger';
-        btnToggleVoz.innerHTML = '<i class="fa fa-microphone"></i> Ativar Voz';
-        btnToggleVoz.className = 'btn btn-success btn-sm';
-        iconeVoz.className = 'fa fa-microphone text-muted';
-        if (voiceStatus) {
-            voiceStatus.style.display = 'none';
-        }
-    }
-}
-
-function testarVoz() {
-    alert('Teste de voz: Diga "zero um" para simular o ID 01.');
-}
-
-function iniciarReconhecimentoVoz() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('Seu navegador não suporta reconhecimento de voz. Use o leitor de código de barras.');
-        return;
-    }
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    
-    recognition.start();
-    
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript.toLowerCase();
-        let idCol = '';
-        
-        // Converter números falados para dígitos
-        const numeros = {
-            'zero': '0', 'um': '1', 'dois': '2', 'três': '3', 'quatro': '4',
-            'cinco': '5', 'seis': '6', 'sete': '7', 'oito': '8', 'nove': '9'
-        };
-        
-        const palavras = transcript.split(' ');
-        palavras.forEach(palavra => {
-            if (numeros[palavra]) {
-                idCol += numeros[palavra];
-            } else if (/^\d+$/.test(palavra)) {
-                idCol += palavra;
-            }
-        });
-        
-        if (idCol) {
-            const idColRetirada = document.getElementById('idColRetirada');
-            if (idColRetirada) {
-                idColRetirada.value = idCol;
-            }
-            alert(`ID reconhecido: ${idCol}`);
-        } else {
-            alert('Não foi possível reconhecer um ID válido. Tente novamente.');
-        }
-    };
-    
-    recognition.onerror = function(event) {
-        console.error('Erro no reconhecimento de voz:', event.error);
-        alert('Erro no reconhecimento de voz. Tente novamente.');
-    };
-}
-
-// ====================================================================
-// FUNÇÕES DE TESTE DO FIREBASE
+// FUNÇÕES DE TESTE - PARA VERIFICAR SE O FIREBASE ESTÁ FUNCIONANDO
 // ====================================================================
 
 function testFirebaseConnection() {
@@ -3057,10 +2363,8 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // Mostrar mensagem de erro se o Firebase não carregar
         const errorElement = document.getElementById('loginError');
-        if (errorElement) {
-            errorElement.textContent = 'Erro ao carregar Firebase. Verifique sua conexão com a internet.';
-            errorElement.style.display = 'block';
-        }
+        errorElement.textContent = 'Erro ao carregar Firebase. Verifique sua conexão com a internet.';
+        errorElement.style.display = 'block';
     }
 });
 
