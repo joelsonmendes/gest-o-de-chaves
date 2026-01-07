@@ -363,6 +363,36 @@
             font-size: 0.8em;
             margin-left: 5px;
         }
+        .qr-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .report-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            border-color: #fd790d;
+        }
+        .voice-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .voice-active {
+            background: #1a331a;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+        .voice-inactive {
+            background: #332b1a;
+            color: #FF9800;
+            border: 1px solid #FF9800;
+        }
     </style>
 </head>
 
@@ -1423,11 +1453,8 @@ function iniciarSistema() {
 }
 
 // ====================================================================
-// FUNÇÕES DO SISTEMA (mantidas do código original)
+// FUNÇÕES DO SISTEMA (CORRIGIDAS)
 // ====================================================================
-
-// Adicione aqui as funções do sistema original que não foram incluídas acima
-// como: configurarDetecaoConexao, carregarDadosOffline, etc.
 
 function configurarDetecaoConexao() {
     isOnline = navigator.onLine;
@@ -1534,33 +1561,97 @@ function atualizarStatusChaveLocal(chave, colaborador, acao) {
 
 async function sincronizarDadosPendentes() {
     if (!currentUser) {
-        console.error('Usuário não autenticado');
+        alert('Você precisa estar logado para sincronizar.');
         return;
     }
     
-    if (!isOnline || historicoPendente.length === 0) return;
-
+    if (historicoPendente.length === 0) {
+        alert('Não há dados pendentes para sincronizar.');
+        return;
+    }
+    
+    if (!isOnline) {
+        alert('Você está offline. Conecte-se à internet para sincronizar.');
+        return;
+    }
+    
     document.getElementById('syncStatus').style.display = 'block';
+    document.getElementById('syncStatus').innerHTML = '<i class="fa fa-refresh fa-spin"></i> Sincronizando dados pendentes...';
     
     let sucessos = 0;
     let erros = 0;
-
-    for (let i = historicoPendente.length - 1; i >= 0; i--) {
-        const movimentacao = historicoPendente[i];
+    const total = historicoPendente.length;
+    
+    // Criar uma cópia do array para evitar problemas de iteração
+    const pendentesParaSincronizar = [...historicoPendente];
+    
+    for (let i = 0; i < pendentesParaSincronizar.length; i++) {
+        const movimentacao = pendentesParaSincronizar[i];
         
-        if (await sincronizarMovimentacao(movimentacao)) {
+        try {
+            // 1. Sincronizar no histórico
+            await db.collection("historico").add({
+                chave: movimentacao.chave,
+                nomeChave: movimentacao.nomeChave,
+                colaborador: movimentacao.colaborador,
+                idColaborador: movimentacao.idColaborador,
+                acao: movimentacao.acao,
+                data: movimentacao.data,
+                dataTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                usuarioId: currentUser.uid,
+                usuarioEmail: currentUser.email
+            });
+            
+            // 2. Atualizar status da chave no Firestore
+            const chave = chaves.find(c => c.id === movimentacao.chave);
+            if (chave && chave.idDoc) {
+                if (movimentacao.acao === "RETIRADA") {
+                    await db.collection("chaves").doc(chave.idDoc).update({
+                        status: "Retirada por " + movimentacao.colaborador,
+                        ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else if (movimentacao.acao === "DEVOLUÇÃO") {
+                    await db.collection("chaves").doc(chave.idDoc).update({
+                        status: "Disponível",
+                        ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            }
+            
+            // 3. Remover do array de pendentes
+            historicoPendente = historicoPendente.filter(m => m.id !== movimentacao.id);
             sucessos++;
-        } else {
+            
+            // Atualizar contador em tempo real
+            document.getElementById('syncStatus').innerHTML = 
+                `<i class="fa fa-refresh fa-spin"></i> Sincronizando... (${sucessos}/${total})`;
+            
+        } catch (error) {
+            console.error("Erro ao sincronizar movimentação:", error);
             erros++;
-            break;
+            
+            // Se houver erro de rede, parar a sincronização
+            if (error.code === 'unavailable' || error.message.includes('network')) {
+                alert('Erro de rede durante a sincronização. Alguns dados podem não ter sido sincronizados.');
+                break;
+            }
         }
     }
-
+    
+    // Salvar estado atualizado no localStorage
+    salvarDadosOffline();
+    
+    // Atualizar última sincronização
+    localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
+    document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
+    
     document.getElementById('syncStatus').style.display = 'none';
     
+    // Mostrar resumo
     if (erros === 0) {
-        localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
-        document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
+        alert(`Sincronização concluída! ${sucessos} registro(s) sincronizado(s) com sucesso.`);
+    } else {
+        alert(`Sincronização parcial: ${sucessos} registro(s) sincronizado(s), ${erros} erro(s).`);
     }
 }
 
@@ -1965,6 +2056,9 @@ function showPage(page, event) {
     if (page === 'relatorios') {
         atualizarEstatisticas();
     }
+    
+    // Adicionar esta linha para garantir que a página seja rolada para o topo
+    window.scrollTo(0, 0);
 }
 
 function iniciarScanner() {
@@ -2318,7 +2412,377 @@ function abrirEdicao(tipo, indexOriginal) {
 }
 
 // ====================================================================
-// FUNÇÕES DE TESTE - PARA VERIFICAR SE O FIREBASE ESTÁ FUNCIONANDO
+// FUNÇÕES DE RELATÓRIOS (IMPLEMENTADAS)
+// ====================================================================
+
+function gerarRelatorioChaves() {
+    if (!currentUser) {
+        alert('Você precisa estar logado para gerar relatórios.');
+        return;
+    }
+    
+    if (chaves.length === 0) {
+        alert('Não há chaves cadastradas para gerar relatório.');
+        return;
+    }
+    
+    let csv = 'ID;Nome;Status;Data Criação;Usuário Criador\n';
+    
+    chaves.forEach(chave => {
+        csv += `${chave.id};${chave.nome};${chave.status};${chave.dataCriacao || 'N/A'};${chave.usuarioCriador || 'N/A'}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_chaves_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert('Relatório de chaves gerado com sucesso!');
+}
+
+function gerarRelatorioColaboradores() {
+    if (!currentUser) {
+        alert('Você precisa estar logado para gerar relatórios.');
+        return;
+    }
+    
+    if (colaboradores.length === 0) {
+        alert('Não há colaboradores cadastrados para gerar relatório.');
+        return;
+    }
+    
+    let csv = 'ID;Nome;Data Criação;Usuário Criador\n';
+    
+    colaboradores.forEach(colab => {
+        csv += `${colab.id};${colab.nome};${colab.dataCriacao || 'N/A'};${colab.usuarioCriador || 'N/A'}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_colaboradores_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert('Relatório de colaboradores gerado com sucesso!');
+}
+
+function gerarRelatorioHistorico() {
+    if (!currentUser) {
+        alert('Você precisa estar logado para gerar relatórios.');
+        return;
+    }
+    
+    const todosRegistros = [...historico, ...historicoPendente];
+    
+    if (todosRegistros.length === 0) {
+        alert('Não há histórico para gerar relatório.');
+        return;
+    }
+    
+    let csv = 'Chave;Nome Chave;Colaborador;ID Colaborador;Ação;Data;Status Sincronização;Usuário\n';
+    
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+    
+    todosRegistros.forEach(registro => {
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        const usuario = registro.usuarioEmail || 'Desconhecido';
+        const nomeChave = registro.nomeChave || registro.chave;
+        
+        csv += `${registro.chave};${nomeChave};${registro.colaborador};${registro.idColaborador || 'N/A'};${registro.acao};${registro.data};${status};${usuario}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_historico_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert('Relatório histórico gerado com sucesso!');
+}
+
+function gerarRelatorioCompleto() {
+    if (!currentUser) {
+        alert('Você precisa estar logado para gerar relatórios.');
+        return;
+    }
+    
+    let csv = '=== RELATÓRIO COMPLETO DO SISTEMA ===\n';
+    csv += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n`;
+    csv += `Usuário: ${currentUser.email}\n\n`;
+    
+    // Seção de Chaves
+    csv += '=== CHAVES CADASTRADAS ===\n';
+    csv += 'ID;Nome;Status;Data Criação;Usuário Criador\n';
+    chaves.forEach(chave => {
+        csv += `${chave.id};${chave.nome};${chave.status};${chave.dataCriacao || 'N/A'};${chave.usuarioCriador || 'N/A'}\n`;
+    });
+    
+    // Seção de Colaboradores
+    csv += '\n=== COLABORADORES CADASTRADOS ===\n';
+    csv += 'ID;Nome;Data Criação;Usuário Criador\n';
+    colaboradores.forEach(colab => {
+        csv += `${colab.id};${colab.nome};${colab.dataCriacao || 'N/A'};${colab.usuarioCriador || 'N/A'}\n`;
+    });
+    
+    // Seção de Histórico
+    csv += '\n=== HISTÓRICO DE MOVIMENTAÇÕES ===\n';
+    csv += 'Chave;Colaborador;Ação;Data;Status Sincronização;Usuário\n';
+    
+    const todosRegistros = [...historico, ...historicoPendente];
+    todosRegistros.sort((a, b) => new Date(b.dataTimestamp) - new Date(a.dataTimestamp));
+    
+    todosRegistros.forEach(registro => {
+        const status = registro.sincronizado === false ? 'Pendente' : 'Sincronizado';
+        const usuario = registro.usuarioEmail || 'Desconhecido';
+        
+        csv += `${registro.chave};${registro.colaborador};${registro.acao};${registro.data};${status};${usuario}\n`;
+    });
+    
+    // Estatísticas
+    const totalDisponiveis = chaves.filter(c => 
+        c.status === "Disponível" || c.status === "Disponível (Offline)"
+    ).length;
+    const totalMovimentacoes = historico.length + historicoPendente.length;
+    
+    csv += '\n=== ESTATÍSTICAS ===\n';
+    csv += `Total de Chaves: ${chaves.length}\n`;
+    csv += `Chaves Disponíveis: ${totalDisponiveis}\n`;
+    csv += `Chaves Retiradas: ${chaves.length - totalDisponiveis}\n`;
+    csv += `Total de Colaboradores: ${colaboradores.length}\n`;
+    csv += `Total de Movimentações: ${totalMovimentacoes}\n`;
+    csv += `Movimentações Pendentes: ${historicoPendente.length}\n`;
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_completo_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert('Relatório completo gerado com sucesso!');
+}
+
+// ====================================================================
+// FUNÇÕES DE QR CODES (IMPLEMENTADAS)
+// ====================================================================
+
+function gerarTodosQRCodes() {
+    const container = document.getElementById('qrCodesContainer');
+    container.innerHTML = '';
+    
+    if (chaves.length === 0) {
+        container.innerHTML = '<p class="text-muted">Nenhuma chave cadastrada para gerar QR Codes.</p>';
+        return;
+    }
+    
+    chaves.forEach(chave => {
+        const qrCard = document.createElement('div');
+        qrCard.className = 'card mb-3';
+        qrCard.style.width = '200px';
+        qrCard.style.display = 'inline-block';
+        qrCard.style.margin = '10px';
+        qrCard.style.verticalAlign = 'top';
+        
+        qrCard.innerHTML = `
+            <div class="card-body text-center">
+                <h6 class="card-title">${chave.id}</h6>
+                <p class="card-text small">${chave.nome}</p>
+                <div id="qr-${chave.id}"></div>
+                <button class="btn btn-sm btn-success mt-2" onclick="baixarQRCode('${chave.id}')">
+                    <i class="fa fa-download"></i> Baixar
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(qrCard);
+        
+        // Gerar QR Code
+        setTimeout(() => {
+            const qrDiv = document.getElementById(`qr-${chave.id}`);
+            if (qrDiv) {
+                qrDiv.innerHTML = '';
+                new QRCode(qrDiv, { 
+                    text: chave.id, 
+                    width: 120, 
+                    height: 120,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        }, 100);
+    });
+}
+
+function baixarQRCode(chaveId) {
+    const chave = chaves.find(c => c.id === chaveId);
+    if (!chave) return;
+    
+    const qrDiv = document.getElementById(`qr-${chaveId}`);
+    if (!qrDiv) return;
+    
+    const canvas = qrDiv.querySelector('canvas');
+    if (!canvas) {
+        alert('QR Code ainda não foi gerado. Aguarde alguns segundos.');
+        return;
+    }
+    
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `QRCode_${chaveId}.png`;
+    link.click();
+}
+
+async function baixarTodosQRCodes() {
+    if (!window.JSZip) {
+        alert('Biblioteca JSZip não carregada. Não é possível gerar ZIP.');
+        return;
+    }
+    
+    if (chaves.length === 0) {
+        alert('Não há chaves para gerar QR Codes.');
+        return;
+    }
+    
+    alert('A funcionalidade de baixar todos os QR Codes em ZIP requer a biblioteca JSZip. Esta funcionalidade será implementada em breve.');
+    
+    // Implementação simplificada - baixa cada QR Code individualmente
+    chaves.forEach((chave, index) => {
+        setTimeout(() => {
+            baixarQRCode(chave.id);
+        }, index * 500); // Delay para evitar bloqueio do navegador
+    });
+}
+
+function imprimirQRCodes() {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>QR Codes das Chaves</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    .qr-container { display: flex; flex-wrap: wrap; gap: 20px; }
+                    .qr-item { text-align: center; margin: 10px; }
+                    .qr-item canvas { width: 150px; height: 150px; }
+                </style>
+            </head>
+            <body>
+                <h1>QR Codes das Chaves</h1>
+                <div class="qr-container">
+    `);
+    
+    chaves.forEach(chave => {
+        // Criar canvas temporário para o QR Code
+        const tempDiv = document.createElement('div');
+        new QRCode(tempDiv, { 
+            text: chave.id, 
+            width: 150, 
+            height: 150,
+            colorDark: "#000000",
+            colorLight: "#ffffff"
+        });
+        
+        setTimeout(() => {
+            const canvas = tempDiv.querySelector('canvas');
+            if (canvas) {
+                const dataUrl = canvas.toDataURL('image/png');
+                printWindow.document.write(`
+                    <div class="qr-item">
+                        <h3>${chave.id}</h3>
+                        <p>${chave.nome}</p>
+                        <img src="${dataUrl}" alt="QR Code ${chave.id}">
+                    </div>
+                `);
+            }
+        }, 100);
+    });
+    
+    printWindow.document.write(`
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        window.onafterprint = function() {
+                            window.close();
+                        };
+                    };
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+// ====================================================================
+// FUNÇÕES AUXILIARES FALTANTES
+// ====================================================================
+
+function solicitarExclusaoColaborador(index) {
+    if (!currentUser) {
+        alert('Você precisa estar logado para excluir colaboradores.');
+        return;
+    }
+    
+    const colaborador = colaboradores[index];
+    if (!colaborador) return;
+    
+    colaboradorParaExcluir = colaborador;
+    
+    document.getElementById('mensagemExclusao').textContent = 
+        `Tem certeza que deseja excluir o colaborador "${colaborador.nome}" (ID: ${colaborador.id})?`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+    modal.show();
+}
+
+function confirmarExclusaoColaborador() {
+    if (!colaboradorParaExcluir || !colaboradorParaExcluir.idDoc) {
+        alert('Erro: Colaborador não encontrado.');
+        return;
+    }
+    
+    db.collection("colaboradores").doc(colaboradorParaExcluir.idDoc).delete()
+        .then(() => {
+            alert(`Colaborador ${colaboradorParaExcluir.nome} excluído com sucesso!`);
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarExclusao'));
+            if (modal) modal.hide();
+            
+            colaboradorParaExcluir = null;
+        })
+        .catch(error => {
+            console.error("Erro ao excluir colaborador:", error);
+            alert("Erro ao excluir colaborador. Verifique o console.");
+        });
+}
+
+// ====================================================================
+// FUNÇÕES DE TESTE DO FIREBASE
 // ====================================================================
 
 function testFirebaseConnection() {
@@ -2347,6 +2811,116 @@ function testFirebaseConnection() {
         showMessage('Erro ao inicializar Firebase: ' + error.message);
         return false;
     }
+}
+
+// ====================================================================
+// FUNÇÕES AUXILIARES PARA LEITOR DE CÓDIGO DE BARRAS
+// ====================================================================
+
+function toggleLeitor() {
+    const statusLeitor = document.getElementById('statusLeitor');
+    const btnToggleLeitor = document.getElementById('btnToggleLeitor');
+    const iconeLeitor = document.getElementById('iconeLeitor');
+    
+    if (statusLeitor.textContent === 'Desconectado') {
+        statusLeitor.textContent = 'Conectado';
+        statusLeitor.className = 'badge bg-success';
+        btnToggleLeitor.innerHTML = '<i class="fa fa-plug"></i> Desconectar Leitor';
+        btnToggleLeitor.className = 'btn btn-danger btn-sm';
+        iconeLeitor.className = 'fa fa-barcode text-success';
+        alert('Leitor conectado! Agora você pode escanear códigos de barras dos IDs dos colaboradores.');
+    } else {
+        statusLeitor.textContent = 'Desconectado';
+        statusLeitor.className = 'badge bg-danger';
+        btnToggleLeitor.innerHTML = '<i class="fa fa-plug"></i> Conectar Leitor';
+        btnToggleLeitor.className = 'btn btn-success btn-sm';
+        iconeLeitor.className = 'fa fa-barcode text-muted';
+    }
+}
+
+function testarLeitor() {
+    // Simula a leitura de um código de barras
+    const idColInput = document.getElementById('idColRetirada');
+    if (idColInput) {
+        idColInput.value = '01'; // Valor de teste
+        alert('Leitor testado! Valor simulado: 01');
+    }
+}
+
+function toggleReconhecimentoVoz() {
+    const statusVoz = document.getElementById('statusVoz');
+    const btnToggleVoz = document.getElementById('btnToggleVoz');
+    const iconeVoz = document.getElementById('iconeVoz');
+    
+    if (statusVoz.textContent === 'Inativo') {
+        statusVoz.textContent = 'Ativo';
+        statusVoz.className = 'badge bg-success';
+        btnToggleVoz.innerHTML = '<i class="fa fa-microphone-slash"></i> Desativar Voz';
+        btnToggleVoz.className = 'btn btn-danger btn-sm';
+        iconeVoz.className = 'fa fa-microphone text-success';
+        document.getElementById('voiceStatus').style.display = 'block';
+        document.getElementById('voiceStatus').className = 'voice-status voice-active';
+        alert('Reconhecimento de voz ativado! Após escanear uma chave, fale o ID do colaborador.');
+    } else {
+        statusVoz.textContent = 'Inativo';
+        statusVoz.className = 'badge bg-danger';
+        btnToggleVoz.innerHTML = '<i class="fa fa-microphone"></i> Ativar Voz';
+        btnToggleVoz.className = 'btn btn-success btn-sm';
+        iconeVoz.className = 'fa fa-microphone text-muted';
+        document.getElementById('voiceStatus').style.display = 'none';
+    }
+}
+
+function testarVoz() {
+    alert('Teste de voz: Diga "zero um" para simular o ID 01.');
+}
+
+function iniciarReconhecimentoVoz() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Seu navegador não suporta reconhecimento de voz. Use o leitor de código de barras.');
+        return;
+    }
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    
+    recognition.start();
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        let idCol = '';
+        
+        // Converter números falados para dígitos
+        const numeros = {
+            'zero': '0', 'um': '1', 'dois': '2', 'três': '3', 'quatro': '4',
+            'cinco': '5', 'seis': '6', 'sete': '7', 'oito': '8', 'nove': '9'
+        };
+        
+        const palavras = transcript.split(' ');
+        palavras.forEach(palavra => {
+            if (numeros[palavra]) {
+                idCol += numeros[palavra];
+            } else if (/^\d+$/.test(palavra)) {
+                idCol += palavra;
+            }
+        });
+        
+        if (idCol) {
+            document.getElementById('idColRetirada').value = idCol;
+            alert(`ID reconhecido: ${idCol}`);
+        } else {
+            alert('Não foi possível reconhecer um ID válido. Tente novamente.');
+        }
+    };
+    
+    recognition.onerror = function(event) {
+        console.error('Erro no reconhecimento de voz:', event.error);
+        alert('Erro no reconhecimento de voz. Tente novamente.');
+    };
 }
 
 // ====================================================================
