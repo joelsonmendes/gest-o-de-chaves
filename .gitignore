@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+package-lock.json
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.production
+
+# Cache e logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Pasta do Vercel
+.vercel/
+
+# Arquivos temporários
+temp/
+*.tmp
