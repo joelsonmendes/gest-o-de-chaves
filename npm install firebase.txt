@@ -344,6 +344,12 @@
       border: 1px solid #7a2d2d;
       color: #ffb3b3;
     }
+    .vigilante-only {
+      display: block;
+    }
+    .admin-only {
+      display: block;
+    }
     @media (max-width: 768px) {
       .sidebar {
         width: 100%;
@@ -408,6 +414,7 @@
         </div>
         <div class="text-center">
           <a href="#" id="createAccountLink" class="text-info">Criar nova conta</a>
+          <p class="text-muted mt-2"><small>Novas contas são criadas como VIGILANTE por padrão</small></p>
         </div>
       </form>
 
@@ -427,6 +434,14 @@
         <div class="mb-3">
           <label for="registerConfirmPassword" class="form-label text-white">Confirmar senha</label>
           <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirme a senha" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-white">Tipo de usuário (apenas admin pode criar admin)</label>
+          <select id="registerTipo" class="form-control">
+            <option value="vigilante">Vigilante</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <small class="text-muted">Apenas administradores podem criar contas de admin</small>
         </div>
         <button type="submit" class="btn btn-success w-100 mb-3" id="btnRegister">
           <i class="fa fa-user-plus"></i> Criar conta
@@ -460,23 +475,26 @@
         <img src="logo.png" alt="SENAIHUB Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTUwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iNjAiIGZpbGw9IiNGRjc5MEQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSI+U0VOQUlIVUI8L3RleHQ+PC9zdmc+';">
       </div>
 
-      <a href="#" data-role="all" data-page="home" class="activeMenu">
-        <i class="fa fa-home"></i> Home
+      <!-- Links que todos podem ver -->
+      <a href="#" data-role="all" data-page="qr" class="activeMenu">
+        <i class="fa fa-camera"></i> Retirar/Devolver Chaves
+      </a>
+      <a href="#" data-role="all" data-page="historico">
+        <i class="fa fa-clock-rotate-left"></i> Histórico (Visualização)
+      </a>
+      
+      <!-- Links apenas para ADMIN -->
+      <a href="#" data-role="admin" data-page="home">
+        <i class="fa fa-home"></i> Dashboard
       </a>
       <a href="#" data-role="admin" data-page="chaves">
-        <i class="fa fa-key"></i> Chaves
+        <i class="fa fa-key"></i> Gerenciar Chaves
       </a>
       <a href="#" data-role="admin" data-page="colaboradores">
-        <i class="fa fa-users"></i> Colaboradores
+        <i class="fa fa-users"></i> Gerenciar Colaboradores
       </a>
       <a href="#" data-role="admin" data-page="qr-codes">
         <i class="fa fa-qrcode"></i> Todos QR Codes
-      </a>
-      <a href="#" data-role="all" data-page="historico">
-        <i class="fa fa-clock-rotate-left"></i> Histórico
-      </a>
-      <a href="#" data-role="all" data-page="qr">
-        <i class="fa fa-camera"></i> Retirar por QR Code
       </a>
       <a href="#" data-role="admin" data-page="relatorios">
         <i class="fa fa-chart-bar"></i> Relatórios
@@ -512,8 +530,9 @@
           <i class="fa fa-refresh fa-spin"></i> Sincronizando dados pendentes...
         </div>
 
-        <section id="home">
-          <h1 class="mb-4">Dashboard</h1>
+        <!-- Página Home (Apenas Admin) -->
+        <section id="home" style="display:none;">
+          <h1 class="mb-4">Dashboard Administrativo</h1>
           <p class="text-muted">
             Bem-vindo, <span id="welcomeUser">Usuário</span>!
             <span id="welcomeRole" class="profile-badge ms-2">perfil</span>
@@ -544,8 +563,9 @@
           </div>
         </section>
 
+        <!-- Página Chaves (Apenas Admin) -->
         <section id="chaves" style="display:none;">
-          <h2><i class="fa fa-key text-info"></i> Gestão de Chaves</h2>
+          <h2><i class="fa fa-key text-info"></i> Gerenciar Chaves</h2>
           <hr/>
           <div class="card p-4 mt-3">
             <h4>Cadastrar Chave</h4>
@@ -577,8 +597,9 @@
           </div>
         </section>
 
+        <!-- Página Colaboradores (Apenas Admin) -->
         <section id="colaboradores" style="display:none;">
-          <h2><i class="fa fa-users text-warning"></i> Gestão de Colaboradores</h2>
+          <h2><i class="fa fa-users text-warning"></i> Gerenciar Colaboradores</h2>
           <hr/>
           <div class="card p-4 mt-3">
             <h4>Cadastrar Colaborador</h4>
@@ -605,6 +626,7 @@
           </div>
         </section>
 
+        <!-- Página QR Codes (Apenas Admin) -->
         <section id="qr-codes" style="display:none;">
           <h2><i class="fa fa-qrcode text-info"></i> Todos os QR Codes</h2>
           <hr/>
@@ -623,13 +645,14 @@
           </div>
         </section>
 
+        <!-- Página Histórico (Todos podem ver, mas com funcionalidades limitadas para vigilante) -->
         <section id="historico" style="display:none;">
           <h2><i class="fa fa-clock-rotate-left text-success"></i> Histórico de Movimentações</h2>
           <hr/>
           <div class="card p-3 mb-4" id="historicoActionsCard">
-            <h4>Relatórios</h4>
+            <h4>Opções</h4>
             <button class="btn btn-success mt-2" id="btnHistoricoCsv" onclick="window.gerarRelatorioHistorico()">
-              <i class="fa fa-download"></i> Baixar Relatório Completo (CSV)
+              <i class="fa fa-download"></i> Baixar Relatório (CSV)
             </button>
             <button class="btn btn-warning mt-2 ms-2" id="btnHistoricoSync" onclick="window.sincronizarDadosPendentes()">
               <i class="fa fa-refresh"></i> Sincronizar Dados Pendentes
@@ -654,8 +677,9 @@
           </div>
         </section>
 
-        <section id="qr" style="display:none;">
-          <h2><i class="fa fa-qrcode text-info"></i> Retirada por QR Code</h2>
+        <!-- Página QR Scanner (Todos podem usar - fluxo principal do vigilante) -->
+        <section id="qr" style="display:block;">
+          <h2><i class="fa fa-qrcode text-info"></i> Retirada/Devolução de Chaves</h2>
           <hr/>
           <div class="card p-4 mt-3">
             <h4>Escanear QR Code da Chave</h4>
@@ -752,6 +776,7 @@
           </div>
         </section>
 
+        <!-- Página Relatórios (Apenas Admin) -->
         <section id="relatorios" style="display:none;">
           <h2><i class="fa fa-chart-bar text-warning"></i> Relatórios do Sistema</h2>
           <hr/>
@@ -851,6 +876,7 @@
           </div>
         </section>
 
+        <!-- Página Offline (Apenas Admin) -->
         <section id="offline" style="display:none;">
           <h2><i class="fa fa-cloud text-warning"></i> Gerenciamento de Dados Offline</h2>
           <hr/>
@@ -903,8 +929,8 @@
       </div>
 
       <footer class="footer">
-        <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 3.5.1 (RBAC Admin/Vigilante + Vercel + Firebase)</p>
+        <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves.</p>
+        <p>Versão 4.0.0 (Perfis: Admin e Vigilante)</p>
       </footer>
     </div>
   </div>
@@ -1115,7 +1141,7 @@
           const doc = await AppState.db.collection('usuarios').doc(uid).get();
 
           if (!doc.exists) {
-            // Criar perfil padrão se não existir
+            // Criar perfil padrão se não existir (vigilante)
             await AppState.db.collection('usuarios').doc(uid).set({
               name: AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0],
               email: AppState.currentUser.email,
@@ -1151,31 +1177,38 @@
       }
 
       function canManageKeys() {
-        return isAdmin();
+        return isAdmin(); // Apenas admin pode gerenciar chaves
       }
 
       function canManageCollaborators() {
-        return isAdmin();
+        return isAdmin(); // Apenas admin pode gerenciar colaboradores
       }
 
       function canViewReports() {
-        return isAdmin();
+        return isAdmin(); // Apenas admin pode ver relatórios
       }
 
       function canResetHistory() {
-        return isAdmin();
+        return isAdmin(); // Apenas admin pode resetar histórico
       }
 
       function canOperateFlow() {
-        return isAdmin() || isVigilante();
+        return isAdmin() || isVigilante(); // Ambos podem operar o fluxo de chaves
+      }
+
+      function canViewHistory() {
+        return true; // Todos podem ver o histórico (visualização)
       }
 
       function canAccessPage(page) {
-        const adminPages = ['chaves', 'colaboradores', 'qr-codes', 'relatorios', 'offline'];
-        const flowPages = ['home', 'historico', 'qr'];
+        // Páginas que apenas admin pode acessar
+        const adminOnlyPages = ['home', 'chaves', 'colaboradores', 'qr-codes', 'relatorios', 'offline'];
+        
+        // Páginas que todos podem acessar
+        const allPages = ['qr', 'historico'];
 
-        if (adminPages.includes(page)) return isAdmin();
-        if (flowPages.includes(page)) return canOperateFlow();
+        if (adminOnlyPages.includes(page)) return isAdmin();
+        if (allPages.includes(page)) return true;
         return false;
       }
 
@@ -1202,36 +1235,41 @@
       function aplicarPermissoesUI() {
         const role = AppState.userRole || 'vigilante';
 
+        // Mostrar/esconder links do menu baseado no perfil
         document.querySelectorAll('.sidebar a[data-role]').forEach(link => {
           const allowedRole = link.getAttribute('data-role');
-
-          if (allowedRole === 'all' || allowedRole === role) {
+          
+          if (allowedRole === 'all') {
             link.style.display = 'block';
-          } else {
+          } else if (allowedRole === 'admin' && role === 'admin') {
+            link.style.display = 'block';
+          } else if (allowedRole === 'admin' && role !== 'admin') {
             link.style.display = 'none';
           }
         });
 
+        // Atualizar badges de perfil
         const roleBadge = document.getElementById('userRoleBadge');
         const welcomeRole = document.getElementById('welcomeRole');
 
         if (roleBadge) roleBadge.textContent = getRoleLabel(role);
         if (welcomeRole) welcomeRole.textContent = getRoleLabel(role);
 
+        // Configurar visibilidade de botões baseado no perfil
         const btnHistoricoCsv = document.getElementById('btnHistoricoCsv');
         const btnHistoricoSync = document.getElementById('btnHistoricoSync');
 
         if (btnHistoricoCsv) {
-          btnHistoricoCsv.style.display = canViewReports() ? 'inline-block' : 'none';
+          btnHistoricoCsv.style.display = isAdmin() ? 'inline-block' : 'none';
         }
 
         if (btnHistoricoSync) {
-          btnHistoricoSync.style.display = canOperateFlow() ? 'inline-block' : 'inline-block';
+          btnHistoricoSync.style.display = isAdmin() ? 'inline-block' : 'none';
         }
 
-        const resetContainer = document.getElementById('resetHistoricoContainer');
-        if (resetContainer && !isAdmin()) {
-          resetContainer.style.display = 'none';
+        // Se for vigilante, garantir que a página inicial seja a de QR Code
+        if (isVigilante()) {
+          showPage('qr');
         }
       }
 
@@ -1273,6 +1311,19 @@
         document.getElementById('registerForm').style.display = 'block';
         document.getElementById('resetPasswordForm').style.display = 'none';
         document.getElementById('loginError').style.display = 'none';
+        
+        // Verificar se usuário atual é admin para permitir criação de admin
+        const tipoSelect = document.getElementById('registerTipo');
+        if (tipoSelect) {
+          if (AppState.currentUser && isAdmin()) {
+            tipoSelect.disabled = false;
+            tipoSelect.title = '';
+          } else {
+            tipoSelect.value = 'vigilante';
+            tipoSelect.disabled = true;
+            tipoSelect.title = 'Apenas administradores podem criar contas de admin';
+          }
+        }
       }
 
       function showPasswordReset() {
@@ -1311,6 +1362,7 @@
             iniciarSistema();
           }
 
+          // Página inicial baseada no perfil
           const initialPage = isAdmin() ? 'home' : 'qr';
           showPage(initialPage);
         }
@@ -1365,6 +1417,7 @@
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('registerConfirmPassword').value;
+        const tipo = document.getElementById('registerTipo').value;
         const errorElement = document.getElementById('loginError');
 
         errorElement.style.display = 'none';
@@ -1377,6 +1430,13 @@
 
         if (password.length < 6) {
           errorElement.textContent = 'Senha deve ter no mínimo 6 caracteres.';
+          errorElement.style.display = 'block';
+          return;
+        }
+
+        // Verificar permissão para criar admin
+        if (tipo === 'admin' && (!AppState.currentUser || !isAdmin())) {
+          errorElement.textContent = 'Apenas administradores podem criar contas de admin.';
           errorElement.style.display = 'block';
           return;
         }
@@ -1399,12 +1459,12 @@
               name: name,
               email: email,
               dataCriacao: firebase.firestore.FieldValue.serverTimestamp(),
-              tipo: 'vigilante'
+              tipo: tipo
             }, { merge: true });
           })
           .then(async () => {
             await carregarPerfilUsuario(AppState.currentUser.uid);
-            alert('Conta criada com sucesso! Perfil definido como VIGILANTE.');
+            alert(`Conta criada com sucesso! Perfil definido como ${getRoleLabel(tipo)}.`);
             showAppContent();
           })
           .catch((error) => {
@@ -2232,7 +2292,7 @@
 
       function showPage(page) {
         if (!canAccessPage(page)) {
-          alert('Você não tem permissão para acessar esta aba.');
+          alert('Você não tem permissão para acessar esta página.');
           return;
         }
 
@@ -2251,7 +2311,7 @@
           pararScanner();
         }
 
-        if (page === 'colaboradores') {
+        if (page === 'colaboradores' && isAdmin()) {
           const ultimoColEl = document.getElementById("ultimoColID");
           if (ultimoColEl) {
             ultimoColEl.innerText = AppState.contadorColaborador > 0
@@ -2260,15 +2320,15 @@
           }
         }
 
-        if (page === 'offline') {
+        if (page === 'offline' && isAdmin()) {
           atualizarListaPendentes();
         }
 
-        if (page === 'qr-codes') {
+        if (page === 'qr-codes' && isAdmin()) {
           gerarTodosQRCodes();
         }
 
-        if (page === 'relatorios') {
+        if (page === 'relatorios' && isAdmin()) {
           atualizarEstatisticas();
         }
       }
