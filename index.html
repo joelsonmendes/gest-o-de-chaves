@@ -13,7 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
   <style>
-    /* Estilos mantidos iguais ao original */
+    /* ESTILOS COMPLETOS (mantidos do original) */
     body {
       background: #121212;
       color: #fff;
@@ -381,9 +381,31 @@
         display: none;
       }
     }
+
+    /* Estilo para a lista de chaves disponíveis */
+    .lista-chaves-disponiveis {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 10px;
+    }
+    .item-chave-disponivel {
+      padding: 8px;
+      margin: 5px 0;
+      background: #2a2a2a;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .item-chave-disponivel:hover {
+      background: #3a3a3a;
+      border-left: 3px solid #fd790d;
+    }
   </style>
 </head>
 <body>
+  <!-- TELA DE LOGIN -->
   <div id="loginScreen" class="login-container">
     <div class="login-card">
       <div class="login-logo">
@@ -394,6 +416,7 @@
       <div id="loginError" class="login-error"></div>
       <div id="loginMessage" class="login-error" style="background: #ff9800; display: none;"></div>
 
+      <!-- Formulário de Login -->
       <form id="loginForm">
         <div class="mb-3">
           <label for="loginEmail" class="form-label text-white">Email</label>
@@ -418,6 +441,7 @@
         </div>
       </form>
 
+      <!-- Formulário de Registro -->
       <form id="registerForm" style="display: none;">
         <div class="mb-3">
           <label for="registerName" class="form-label text-white">Nome completo</label>
@@ -436,12 +460,12 @@
           <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirme a senha" required>
         </div>
         <div class="mb-3">
-          <label class="form-label text-white">Tipo de usuário (apenas admin pode criar admin)</label>
+          <label class="form-label text-white">Tipo de usuário</label>
           <select id="registerTipo" class="form-control">
             <option value="vigilante">Vigilante</option>
             <option value="admin">Administrador</option>
           </select>
-          <small class="text-muted">Apenas administradores podem criar contas de admin</small>
+          <small class="text-muted" id="tipoUsuarioHelp">Apenas administradores podem criar contas de admin</small>
         </div>
         <button type="submit" class="btn btn-success w-100 mb-3" id="btnRegister">
           <i class="fa fa-user-plus"></i> Criar conta
@@ -451,6 +475,7 @@
         </div>
       </form>
 
+      <!-- Formulário de Reset de Senha -->
       <form id="resetPasswordForm" style="display: none;">
         <div class="mb-3">
           <label for="resetEmail" class="form-label text-white">Email</label>
@@ -469,6 +494,7 @@
     </div>
   </div>
 
+  <!-- CONTEÚDO PRINCIPAL (APÓS LOGIN) -->
   <div id="appContent" style="display: none; flex-direction: column; min-height: 100vh;">
     <div class="sidebar">
       <div class="logo-container">
@@ -480,7 +506,7 @@
         <i class="fa fa-camera"></i> Retirar/Devolver Chaves
       </a>
       <a href="#" data-role="all" data-page="historico">
-        <i class="fa fa-clock-rotate-left"></i> Histórico (Visualização)
+        <i class="fa fa-clock-rotate-left"></i> Histórico
       </a>
       
       <!-- Links apenas para ADMIN -->
@@ -645,7 +671,7 @@
           </div>
         </section>
 
-        <!-- Página Histórico (Todos podem ver, mas com funcionalidades limitadas para vigilante) -->
+        <!-- Página Histórico (Todos podem ver) -->
         <section id="historico" style="display:none;">
           <h2><i class="fa fa-clock-rotate-left text-success"></i> Histórico de Movimentações</h2>
           <hr/>
@@ -677,10 +703,12 @@
           </div>
         </section>
 
-        <!-- Página QR Scanner (Todos podem usar - fluxo principal do vigilante) -->
+        <!-- Página QR Scanner (Todos podem usar - simplificada para vigilante) -->
         <section id="qr" style="display:block;">
           <h2><i class="fa fa-qrcode text-info"></i> Retirada/Devolução de Chaves</h2>
           <hr/>
+
+          <!-- Card do Leitor de Código de Barras (já existente) -->
           <div class="card p-4 mt-3">
             <h4>Escanear QR Code da Chave</h4>
             <div class="card p-3 mb-3 leitor-section">
@@ -707,6 +735,7 @@
               </div>
             </div>
 
+            <!-- Assistente de Voz (já existente) -->
             <div class="card p-3 mb-3 voice-control-section">
               <h5><i id="iconeVoz" class="fa fa-microphone text-muted"></i> Assistente de Voz</h5>
               <div class="row align-items-center">
@@ -738,6 +767,7 @@
               </div>
             </div>
 
+            <!-- Scanner de Câmera -->
             <div id="scannerStatus" class="scanner-status scanner-active" style="display: none;">
               <i class="fa fa-camera"></i> Scanner de câmera ativo
             </div>
@@ -747,6 +777,21 @@
                 <i class="fa fa-pause"></i> Pausar Scanner Câmera
               </button>
             </div>
+
+            <!-- NOVO CARD: Pesquisar Chave Disponível (para vigilante) -->
+            <div class="card mt-3" id="pesquisaChaveCard">
+              <div class="card-body">
+                <h5 class="card-title"><i class="fa fa-search"></i> Pesquisar Chave Disponível</h5>
+                <button class="btn btn-info" id="btnPesquisarChave" onclick="window.listarChavesDisponiveis()">
+                  <i class="fa fa-list"></i> Listar Chaves Disponíveis
+                </button>
+                <div id="listaChavesDisponiveis" style="display:none; margin-top:15px;">
+                  <div class="lista-chaves-disponiveis" id="conteudoListaChaves"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Área de confirmação (já existente) -->
             <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
             <div id="areaConfirmacao" style="display: none;">
               <div class="input-group">
@@ -930,11 +975,12 @@
 
       <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves.</p>
-        <p>Versão 4.0.0 (Perfis: Admin e Vigilante)</p>
+        <p>Versão 4.1.0 (Perfis: Admin e Vigilante)</p>
       </footer>
     </div>
   </div>
 
+  <!-- MODAIS -->
   <div class="modal fade" id="modalConfirmarExclusao" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content bg-dark text-white">
@@ -977,7 +1023,9 @@
     (function() {
       "use strict";
 
-      // Configuração do Firebase
+      // ==============================================
+      // CONFIGURAÇÃO FIREBASE
+      // ==============================================
       const firebaseConfig = {
         apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8",
         authDomain: "gestao-chaves-app.firebaseapp.com",
@@ -987,7 +1035,9 @@
         appId: "1:391255964652:web:6d27bb36bc9ff520349ec9"
       };
 
-      // Estado da aplicação
+      // ==============================================
+      // ESTADO DA APLICAÇÃO
+      // ==============================================
       const AppState = {
         firebaseApp: null,
         db: null,
@@ -1076,7 +1126,9 @@
         }
       };
 
-      // Funções de inicialização do Firebase
+      // ==============================================
+      // INICIALIZAÇÃO DO FIREBASE
+      // ==============================================
       function initFirebase() {
         if (AppState.firebaseApp) return AppState.firebaseApp;
 
@@ -1135,7 +1187,9 @@
         });
       }
 
-      // Funções de autenticação e permissões
+      // ==============================================
+      // FUNÇÕES DE PERFIL E PERMISSÕES
+      // ==============================================
       async function carregarPerfilUsuario(uid) {
         try {
           const doc = await AppState.db.collection('usuarios').doc(uid).get();
@@ -1177,37 +1231,30 @@
       }
 
       function canManageKeys() {
-        return isAdmin(); // Apenas admin pode gerenciar chaves
+        return isAdmin();
       }
 
       function canManageCollaborators() {
-        return isAdmin(); // Apenas admin pode gerenciar colaboradores
+        return isAdmin();
       }
 
       function canViewReports() {
-        return isAdmin(); // Apenas admin pode ver relatórios
+        return isAdmin();
       }
 
       function canResetHistory() {
-        return isAdmin(); // Apenas admin pode resetar histórico
+        return isAdmin();
       }
 
       function canOperateFlow() {
-        return isAdmin() || isVigilante(); // Ambos podem operar o fluxo de chaves
-      }
-
-      function canViewHistory() {
-        return true; // Todos podem ver o histórico (visualização)
+        return isAdmin() || isVigilante();
       }
 
       function canAccessPage(page) {
-        // Páginas que apenas admin pode acessar
-        const adminOnlyPages = ['home', 'chaves', 'colaboradores', 'qr-codes', 'relatorios', 'offline'];
-        
-        // Páginas que todos podem acessar
-        const allPages = ['qr', 'historico'];
+        const adminPages = ['home', 'chaves', 'colaboradores', 'qr-codes', 'relatorios', 'offline'];
+        const allPages = ['historico', 'qr'];
 
-        if (adminOnlyPages.includes(page)) return isAdmin();
+        if (adminPages.includes(page)) return isAdmin();
         if (allPages.includes(page)) return true;
         return false;
       }
@@ -1273,102 +1320,9 @@
         }
       }
 
-      function registrarListenerAuth() {
-        if (AppState.authListenerRegistered) return;
-
-        const app = initFirebase();
-        if (!app) return;
-
-        firebase.auth().onAuthStateChanged(async (user) => {
-          if (user) {
-            console.log('Auth: usuário autenticado', user.email);
-            AppState.currentUser = user;
-            await carregarPerfilUsuario(user.uid);
-            showAppContent();
-          } else {
-            console.log('Auth: nenhum usuário autenticado');
-            hideAppContent();
-            AppState.reset();
-          }
-        }, (error) => {
-          console.error('Auth: erro no listener', error);
-          hideAppContent();
-        });
-
-        AppState.authListenerRegistered = true;
-      }
-
-      // Funções de UI
-      function showLogin() {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('resetPasswordForm').style.display = 'none';
-        document.getElementById('loginError').style.display = 'none';
-      }
-
-      function showRegister() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'block';
-        document.getElementById('resetPasswordForm').style.display = 'none';
-        document.getElementById('loginError').style.display = 'none';
-        
-        // Verificar se usuário atual é admin para permitir criação de admin
-        const tipoSelect = document.getElementById('registerTipo');
-        if (tipoSelect) {
-          if (AppState.currentUser && isAdmin()) {
-            tipoSelect.disabled = false;
-            tipoSelect.title = '';
-          } else {
-            tipoSelect.value = 'vigilante';
-            tipoSelect.disabled = true;
-            tipoSelect.title = 'Apenas administradores podem criar contas de admin';
-          }
-        }
-      }
-
-      function showPasswordReset() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('resetPasswordForm').style.display = 'block';
-        document.getElementById('loginError').style.display = 'none';
-      }
-
-      function hideAppContent() {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('appContent').style.display = 'none';
-        AppState.isInitialized = false;
-      }
-
-      function showAppContent() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appContent').style.display = 'flex';
-
-        if (AppState.currentUser) {
-          const displayName = AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0];
-          const firstName = displayName.charAt(0).toUpperCase();
-
-          document.getElementById('userName').textContent = displayName;
-          document.getElementById('userEmailDisplay').textContent = AppState.currentUser.email;
-          document.getElementById('userAvatar').textContent = firstName;
-          document.getElementById('welcomeUser').textContent = displayName;
-
-          const colors = ['#fd790d', '#48f005', '#007bff', '#6f42c1', '#e83e8c'];
-          const colorIndex = AppState.currentUser.email.length % colors.length;
-          document.getElementById('userAvatar').style.background = colors[colorIndex];
-
-          aplicarPermissoesUI();
-
-          if (!AppState.isInitialized) {
-            iniciarSistema();
-          }
-
-          // Página inicial baseada no perfil
-          const initialPage = isAdmin() ? 'home' : 'qr';
-          showPage(initialPage);
-        }
-      }
-
-      // Funções de autenticação
+      // ==============================================
+      // FUNÇÕES DE AUTENTICAÇÃO
+      // ==============================================
       function login(event) {
         event.preventDefault();
         const email = document.getElementById('loginEmail').value;
@@ -1540,28 +1494,467 @@
         }
       }
 
-      // Funções de inicialização do sistema
-      function iniciarSistema() {
-        if (!AppState.currentUser) return;
-        if (AppState.isInitialized) return;
-
-        console.log('Iniciando sistema...');
-
-        initFirebase();
-        carregarScriptsSecundarios();
-
-        configurarDetecaoConexao();
-        carregarDadosOffline();
-        carregarChavesFirebase();
-        carregarColaboradoresFirebase();
-        carregarHistoricoFirebase();
-
-        setTimeout(() => sincronizarDadosPendentesSilencioso(), 2000);
-
-        AppState.isInitialized = true;
-        console.log('Sistema iniciado com sucesso!');
+      // ==============================================
+      // FUNÇÕES DE UI
+      // ==============================================
+      function showLogin() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
       }
 
+      function showRegister() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+        
+        // Verificar se usuário atual é admin para permitir criação de admin
+        const tipoSelect = document.getElementById('registerTipo');
+        if (tipoSelect) {
+          if (AppState.currentUser && isAdmin()) {
+            tipoSelect.disabled = false;
+            tipoSelect.title = '';
+          } else {
+            tipoSelect.value = 'vigilante';
+            tipoSelect.disabled = true;
+            tipoSelect.title = 'Apenas administradores podem criar contas de admin';
+          }
+        }
+      }
+
+      function showPasswordReset() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'block';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function hideAppContent() {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContent').style.display = 'none';
+        AppState.isInitialized = false;
+      }
+
+      function showAppContent() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContent').style.display = 'flex';
+
+        if (AppState.currentUser) {
+          const displayName = AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0];
+          const firstName = displayName.charAt(0).toUpperCase();
+
+          document.getElementById('userName').textContent = displayName;
+          document.getElementById('userEmailDisplay').textContent = AppState.currentUser.email;
+          document.getElementById('userAvatar').textContent = firstName;
+          document.getElementById('welcomeUser').textContent = displayName;
+
+          const colors = ['#fd790d', '#48f005', '#007bff', '#6f42c1', '#e83e8c'];
+          const colorIndex = AppState.currentUser.email.length % colors.length;
+          document.getElementById('userAvatar').style.background = colors[colorIndex];
+
+          aplicarPermissoesUI();
+
+          if (!AppState.isInitialized) {
+            iniciarSistema();
+          }
+
+          // Página inicial baseada no perfil
+          const initialPage = isAdmin() ? 'home' : 'qr';
+          showPage(initialPage);
+        }
+      }
+
+      function showPage(page) {
+        if (!canAccessPage(page)) {
+          alert('Você não tem permissão para acessar esta página.');
+          return;
+        }
+
+        document.querySelectorAll("section").forEach(s => s.style.display = "none");
+        const pageEl = document.getElementById(page);
+        if (pageEl) pageEl.style.display = "block";
+
+        document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
+
+        const activeLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
+        if (activeLink) activeLink.classList.add("activeMenu");
+
+        if (page === 'qr') {
+          iniciarScanner();
+        } else {
+          pararScanner();
+        }
+
+        if (page === 'colaboradores' && isAdmin()) {
+          const ultimoColEl = document.getElementById("ultimoColID");
+          if (ultimoColEl) {
+            ultimoColEl.innerText = AppState.contadorColaborador > 0
+              ? AppState.contadorColaborador.toString().padStart(2, "0")
+              : "Nenhum";
+          }
+        }
+
+        if (page === 'offline' && isAdmin()) {
+          atualizarListaPendentes();
+        }
+
+        if (page === 'qr-codes' && isAdmin()) {
+          gerarTodosQRCodes();
+        }
+
+        if (page === 'relatorios' && isAdmin()) {
+          atualizarEstatisticas();
+        }
+      }
+
+      // ==============================================
+      // FUNÇÕES DO SCANNER
+      // ==============================================
+      function iniciarScanner() {
+        if (typeof Html5QrcodeScanner === 'undefined') {
+          console.warn('Html5QrcodeScanner não carregado');
+          return;
+        }
+
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
+          retomarScanner();
+          return;
+        }
+
+        pararScanner();
+
+        try {
+          AppState.html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            {
+              fps: 10,
+              qrbox: 250,
+              disableFlip: false,
+              facingMode: "environment"
+            },
+            false
+          );
+
+          AppState.html5QrcodeScanner.render(onScanSuccess, onScanError);
+          AppState.scannerAtivo = true;
+          AppState.scannerPausado = false;
+          atualizarStatusScanner();
+
+          const btnToggle = document.getElementById("btnToggleScanner");
+          if (btnToggle) btnToggle.style.display = "block";
+        } catch (error) {
+          console.error('Erro ao iniciar scanner:', error);
+        }
+      }
+
+      function pararScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
+          try {
+            AppState.html5QrcodeScanner.clear();
+          } catch (error) {
+            console.warn('Erro ao parar scanner:', error);
+          }
+          AppState.html5QrcodeScanner = null;
+          AppState.scannerAtivo = false;
+          AppState.scannerPausado = false;
+          atualizarStatusScanner();
+        }
+      }
+
+      function pausarScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && !AppState.scannerPausado) {
+          try {
+            AppState.html5QrcodeScanner.pause();
+            AppState.scannerPausado = true;
+            atualizarStatusScanner();
+          } catch (error) {
+            console.warn('Erro ao pausar scanner:', error);
+          }
+        }
+      }
+
+      function retomarScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && AppState.scannerPausado) {
+          try {
+            AppState.html5QrcodeScanner.resume();
+            AppState.scannerPausado = false;
+            atualizarStatusScanner();
+          } catch (error) {
+            console.warn('Erro ao retomar scanner:', error);
+          }
+        }
+      }
+
+      function toggleScanner() {
+        AppState.scannerPausado ? retomarScanner() : pausarScanner();
+      }
+
+      function atualizarStatusScanner() {
+        const statusElement = document.getElementById("scannerStatus");
+        const toggleButton = document.getElementById("btnToggleScanner");
+
+        if (!statusElement || !toggleButton) return;
+
+        if (AppState.scannerAtivo) {
+          statusElement.style.display = "block";
+          if (AppState.scannerPausado) {
+            statusElement.className = "scanner-status scanner-paused";
+            statusElement.innerHTML = '<i class="fa fa-pause"></i> Scanner pausado';
+            toggleButton.innerHTML = '<i class="fa fa-play"></i> Retomar Scanner';
+          } else {
+            statusElement.className = "scanner-status scanner-active";
+            statusElement.innerHTML = '<i class="fa fa-camera"></i> Scanner ativo';
+            toggleButton.innerHTML = '<i class="fa fa-pause"></i> Pausar Scanner';
+          }
+        } else {
+          statusElement.style.display = "none";
+        }
+      }
+
+      function onScanSuccess(decodedText) {
+        pausarScanner();
+
+        const chave = AppState.chaves.find(c => c.id === decodedText);
+
+        if (!chave) {
+          document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
+          document.getElementById("areaConfirmacao").style.display = "none";
+          alert("QR Code não encontrado no sistema.");
+          setTimeout(retomarScanner, 2000);
+          return;
+        }
+
+        AppState.chaveSelecionada = decodedText;
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
+
+        const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
+        document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
+        document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
+        document.getElementById("idColRetirada").placeholder = isDisponivel
+          ? "ID do colaborador que vai RETIRAR"
+          : "ID do colaborador que vai DEVOLVER";
+      }
+
+      function onScanError(errorMessage) {
+        // Ignorar erros do scanner
+      }
+
+      function reiniciarScanner() {
+        document.getElementById("areaConfirmacao").style.display = "none";
+        document.getElementById("chaveDetectada").innerText = "Nenhuma";
+        document.getElementById("idColRetirada").value = "";
+        AppState.chaveSelecionada = null;
+        retomarScanner();
+      }
+
+      // ==============================================
+      // NOVA FUNÇÃO: LISTAR CHAVES DISPONÍVEIS (para vigilante)
+      // ==============================================
+      function listarChavesDisponiveis() {
+        const container = document.getElementById('listaChavesDisponiveis');
+        const conteudo = document.getElementById('conteudoListaChaves');
+        
+        if (container.style.display === 'none' || container.style.display === '') {
+          // Filtrar chaves com status "Disponível" (ignorando sufixo offline)
+          const disponiveis = AppState.chaves.filter(c => 
+            c.status === 'Disponível' || c.status === 'Disponível (Offline)'
+          );
+
+          if (disponiveis.length === 0) {
+            conteudo.innerHTML = '<p class="text-muted">Nenhuma chave disponível no momento.</p>';
+          } else {
+            let html = '';
+            disponiveis.forEach(chave => {
+              html += `
+                <div class="item-chave-disponivel" onclick="window.selecionarChave('${chave.id}')">
+                  <strong>${chave.id}</strong> - ${chave.nome}
+                </div>
+              `;
+            });
+            conteudo.innerHTML = html;
+          }
+          container.style.display = 'block';
+        } else {
+          container.style.display = 'none';
+        }
+      }
+
+      // Função para selecionar uma chave da lista e preencher no scanner
+      function selecionarChave(chaveId) {
+        const chave = AppState.chaves.find(c => c.id === chaveId);
+        if (chave) {
+          AppState.chaveSelecionada = chaveId;
+          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+          document.getElementById("areaConfirmacao").style.display = "block";
+
+          const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
+          document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
+          document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
+          document.getElementById("idColRetirada").placeholder = isDisponivel
+            ? "ID do colaborador que vai RETIRAR"
+            : "ID do colaborador que vai DEVOLVER";
+
+          // Esconder a lista após selecionar
+          document.getElementById('listaChavesDisponiveis').style.display = 'none';
+        }
+      }
+
+      // ==============================================
+      // FUNÇÕES DE OPERAÇÃO (RETIRADA/DEVOLUÇÃO)
+      // ==============================================
+      function validarColaborador(idCol) {
+        if (!idCol) return "Digite o ID do colaborador.";
+        if (!/^\d+$/.test(idCol)) return "ID deve conter apenas números.";
+        if (AppState.colaboradores.find(c => c.id === idCol)) return null;
+        return "Colaborador não encontrado.";
+      }
+
+      function confirmarRetirada() {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar retirada.')) {
+          return;
+        }
+
+        if (!AppState.chaveSelecionada) {
+          alert("Erro: Nenhuma chave escaneada.");
+          return;
+        }
+
+        const idCol = document.getElementById("idColRetirada").value.trim();
+        const validacao = validarColaborador(idCol);
+        if (validacao) return alert(validacao);
+
+        const colab = AppState.colaboradores.find(c => c.id === idCol);
+        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
+
+        if (!chave) {
+          alert("Chave não encontrada.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (chave.status !== "Disponível" && !String(chave.status).includes("Offline")) {
+          alert(`❌ Chave já está ${chave.status}.`);
+          reiniciarScanner();
+          return;
+        }
+
+        if (AppState.isOnline) {
+          AppState.db.collection("chaves").doc(chave.idDoc).update({
+            status: "Retirada por " + colab.nome
+          })
+          .then(() => {
+            salvarMovimentacao(chave, colab, "RETIRADA");
+            alert(`✅ Chave ${chave.id} retirada por ${colab.nome}.`);
+            reiniciarScanner();
+          })
+          .catch(error => {
+            console.error("Erro ao retirar chave:", error);
+            adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+            alert(`⚠️ Retirada registrada offline!`);
+            reiniciarScanner();
+          });
+        } else {
+          adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+          alert(`⚠️ Retirada registrada offline!`);
+          reiniciarScanner();
+        }
+      }
+
+      function confirmarDevolucao() {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar devolução.')) {
+          return;
+        }
+
+        if (!AppState.chaveSelecionada) {
+          alert("Erro: Nenhuma chave escaneada.");
+          return;
+        }
+
+        const idCol = document.getElementById("idColRetirada").value.trim();
+        const validacao = validarColaborador(idCol);
+        if (validacao) return alert(validacao);
+
+        const colab = AppState.colaboradores.find(c => c.id === idCol);
+        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
+
+        if (!chave) {
+          alert("Chave não encontrada.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
+          alert("Erro: Chave já está disponível.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (AppState.isOnline) {
+          AppState.db.collection("chaves").doc(chave.idDoc).update({
+            status: "Disponível"
+          })
+          .then(() => {
+            salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
+            alert(`✅ Chave ${chave.id} devolvida por ${colab.nome}.`);
+            reiniciarScanner();
+          })
+          .catch(error => {
+            console.error("Erro ao devolver chave:", error);
+            adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+            alert(`⚠️ Devolução registrada offline!`);
+            reiniciarScanner();
+          });
+        } else {
+          adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+          alert(`⚠️ Devolução registrada offline!`);
+          reiniciarScanner();
+        }
+      }
+
+      function iniciarRetiradaRapida(chaveId) {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para retirar chaves.')) {
+          return;
+        }
+
+        showPage('qr');
+
+        const chave = AppState.chaves.find(c => c.id === chaveId);
+        if (chave) {
+          AppState.chaveSelecionada = chaveId;
+          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+          document.getElementById("areaConfirmacao").style.display = "block";
+          document.getElementById("btnConfirmarRetirada").style.display = "block";
+          document.getElementById("btnDevolverChave").style.display = "none";
+          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
+          pausarScanner();
+        }
+      }
+
+      function iniciarDevolucaoRapida(chaveId) {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para devolver chaves.')) {
+          return;
+        }
+
+        showPage('qr');
+
+        const chave = AppState.chaves.find(c => c.id === chaveId);
+        if (chave) {
+          AppState.chaveSelecionada = chaveId;
+          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+          document.getElementById("areaConfirmacao").style.display = "block";
+          document.getElementById("btnConfirmarRetirada").style.display = "none";
+          document.getElementById("btnDevolverChave").style.display = "block";
+          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
+          pausarScanner();
+        }
+      }
+
+      // ==============================================
+      // FUNÇÕES DE DADOS OFFLINE
+      // ==============================================
       function configurarDetecaoConexao() {
         AppState.isOnline = navigator.onLine;
         atualizarStatusConexao();
@@ -1837,6 +2230,9 @@
         });
       }
 
+      // ==============================================
+      // FUNÇÕES DE CARREGAMENTO DE DADOS DO FIREBASE
+      // ==============================================
       function carregarChavesFirebase() {
         if (!AppState.db) return;
 
@@ -1942,6 +2338,9 @@
         }
       }
 
+      // ==============================================
+      // FUNÇÕES DE CADASTRO (APENAS ADMIN)
+      // ==============================================
       function cadastrarChave() {
         if (!requirePermission(canManageKeys, 'Somente administradores podem cadastrar chaves.')) {
           return;
@@ -1998,6 +2397,9 @@
         });
       }
 
+      // ==============================================
+      // FUNÇÕES DE EXCLUSÃO (APENAS ADMIN)
+      // ==============================================
       function solicitarExclusaoChave(index) {
         if (!requirePermission(canManageKeys, 'Somente administradores podem excluir chaves.')) {
           return;
@@ -2074,153 +2476,9 @@
         }
       }
 
-      function validarColaborador(idCol) {
-        if (!idCol) return "Digite o ID do colaborador.";
-        if (!/^\d+$/.test(idCol)) return "ID deve conter apenas números.";
-        if (AppState.colaboradores.find(c => c.id === idCol)) return null;
-        return "Colaborador não encontrado.";
-      }
-
-      function confirmarRetirada() {
-        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar retirada.')) {
-          return;
-        }
-
-        if (!AppState.chaveSelecionada) {
-          alert("Erro: Nenhuma chave escaneada.");
-          return;
-        }
-
-        const idCol = document.getElementById("idColRetirada").value.trim();
-        const validacao = validarColaborador(idCol);
-        if (validacao) return alert(validacao);
-
-        const colab = AppState.colaboradores.find(c => c.id === idCol);
-        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
-
-        if (!chave) {
-          alert("Chave não encontrada.");
-          reiniciarScanner();
-          return;
-        }
-
-        if (chave.status !== "Disponível" && !String(chave.status).includes("Offline")) {
-          alert(`❌ Chave já está ${chave.status}.`);
-          reiniciarScanner();
-          return;
-        }
-
-        if (AppState.isOnline) {
-          AppState.db.collection("chaves").doc(chave.idDoc).update({
-            status: "Retirada por " + colab.nome
-          })
-          .then(() => {
-            salvarMovimentacao(chave, colab, "RETIRADA");
-            alert(`✅ Chave ${chave.id} retirada por ${colab.nome}.`);
-            reiniciarScanner();
-          })
-          .catch(error => {
-            console.error("Erro ao retirar chave:", error);
-            adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
-            alert(`⚠️ Retirada registrada offline!`);
-            reiniciarScanner();
-          });
-        } else {
-          adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
-          alert(`⚠️ Retirada registrada offline!`);
-          reiniciarScanner();
-        }
-      }
-
-      function confirmarDevolucao() {
-        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar devolução.')) {
-          return;
-        }
-
-        if (!AppState.chaveSelecionada) {
-          alert("Erro: Nenhuma chave escaneada.");
-          return;
-        }
-
-        const idCol = document.getElementById("idColRetirada").value.trim();
-        const validacao = validarColaborador(idCol);
-        if (validacao) return alert(validacao);
-
-        const colab = AppState.colaboradores.find(c => c.id === idCol);
-        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
-
-        if (!chave) {
-          alert("Chave não encontrada.");
-          reiniciarScanner();
-          return;
-        }
-
-        if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
-          alert("Erro: Chave já está disponível.");
-          reiniciarScanner();
-          return;
-        }
-
-        if (AppState.isOnline) {
-          AppState.db.collection("chaves").doc(chave.idDoc).update({
-            status: "Disponível"
-          })
-          .then(() => {
-            salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
-            alert(`✅ Chave ${chave.id} devolvida por ${colab.nome}.`);
-            reiniciarScanner();
-          })
-          .catch(error => {
-            console.error("Erro ao devolver chave:", error);
-            adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
-            alert(`⚠️ Devolução registrada offline!`);
-            reiniciarScanner();
-          });
-        } else {
-          adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
-          alert(`⚠️ Devolução registrada offline!`);
-          reiniciarScanner();
-        }
-      }
-
-      function iniciarRetiradaRapida(chaveId) {
-        if (!requirePermission(canOperateFlow, 'Você não tem permissão para retirar chaves.')) {
-          return;
-        }
-
-        showPage('qr');
-
-        const chave = AppState.chaves.find(c => c.id === chaveId);
-        if (chave) {
-          AppState.chaveSelecionada = chaveId;
-          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-          document.getElementById("areaConfirmacao").style.display = "block";
-          document.getElementById("btnConfirmarRetirada").style.display = "block";
-          document.getElementById("btnDevolverChave").style.display = "none";
-          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
-          pausarScanner();
-        }
-      }
-
-      function iniciarDevolucaoRapida(chaveId) {
-        if (!requirePermission(canOperateFlow, 'Você não tem permissão para devolver chaves.')) {
-          return;
-        }
-
-        showPage('qr');
-
-        const chave = AppState.chaves.find(c => c.id === chaveId);
-        if (chave) {
-          AppState.chaveSelecionada = chaveId;
-          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-          document.getElementById("areaConfirmacao").style.display = "block";
-          document.getElementById("btnConfirmarRetirada").style.display = "none";
-          document.getElementById("btnDevolverChave").style.display = "block";
-          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
-          pausarScanner();
-        }
-      }
-
+      // ==============================================
+      // FUNÇÕES DE EDIÇÃO (APENAS ADMIN)
+      // ==============================================
       function abrirEdicao(tipo, indexOriginal) {
         const allowed = tipo === 'chave' ? canManageKeys : canManageCollaborators;
 
@@ -2290,187 +2548,185 @@
         });
       }
 
-      function showPage(page) {
-        if (!canAccessPage(page)) {
-          alert('Você não tem permissão para acessar esta página.');
+      // ==============================================
+      // FUNÇÕES DE RENDERIZAÇÃO
+      // ==============================================
+      function atualizarListas() {
+        const totalDisponiveis = AppState.chaves.filter(c =>
+          c.status === "Disponível" || c.status === "Disponível (Offline)"
+        ).length;
+
+        const totalRetiradas = AppState.chaves.length - totalDisponiveis;
+
+        document.getElementById("totalChaves").innerText = AppState.chaves.length;
+        document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
+        document.getElementById("chavesRetiradas").innerText = totalRetiradas;
+        document.getElementById("totalCol").innerText = AppState.colaboradores.length;
+        document.getElementById("totalHist").innerText = AppState.historico.length + AppState.historicoPendente.length;
+
+        renderizarChaves(AppState.chaves);
+        renderizarColaboradores();
+        renderizarHistorico();
+      }
+
+      function renderizarChaves(chavesParaExibir) {
+        let lista = document.getElementById("listaChaves");
+        if (!lista) return;
+
+        lista.innerHTML = "";
+
+        if (!isAdmin()) {
+          lista.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center text-warning">Acesso restrito a administradores.</td>
+            </tr>
+          `;
           return;
         }
 
-        document.querySelectorAll("section").forEach(s => s.style.display = "none");
-        const pageEl = document.getElementById(page);
-        if (pageEl) pageEl.style.display = "block";
+        chavesParaExibir.forEach((c) => {
+          const indexOriginal = AppState.chaves.findIndex(item => item.id === c.id);
+          const isOffline = c.status && c.status.includes("Offline");
 
-        document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
+          const statusBadgeClass = c.status && c.status.includes("Disponível")
+            ? 'badge bg-success'
+            : 'badge bg-danger';
 
-        const activeLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
-        if (activeLink) activeLink.classList.add("activeMenu");
+          let acoesHtml = `<div class="btn-group" role="group">`;
 
-        if (page === 'qr') {
-          iniciarScanner();
-        } else {
-          pararScanner();
-        }
-
-        if (page === 'colaboradores' && isAdmin()) {
-          const ultimoColEl = document.getElementById("ultimoColID");
-          if (ultimoColEl) {
-            ultimoColEl.innerText = AppState.contadorColaborador > 0
-              ? AppState.contadorColaborador.toString().padStart(2, "0")
-              : "Nenhum";
+          if (isAdmin()) {
+            acoesHtml += `
+              <button class="btn btn-sm btn-warning" onclick="window.abrirEdicao('chave', ${indexOriginal})" title="Editar">
+                <i class="fa fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoChave(${indexOriginal})" title="Excluir">
+                <i class="fa fa-trash"></i>
+              </button>
+            `;
           }
-        }
 
-        if (page === 'offline' && isAdmin()) {
-          atualizarListaPendentes();
-        }
-
-        if (page === 'qr-codes' && isAdmin()) {
-          gerarTodosQRCodes();
-        }
-
-        if (page === 'relatorios' && isAdmin()) {
-          atualizarEstatisticas();
-        }
-      }
-
-      function iniciarScanner() {
-        if (typeof Html5QrcodeScanner === 'undefined') {
-          console.warn('Html5QrcodeScanner não carregado');
-          return;
-        }
-
-        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
-          retomarScanner();
-          return;
-        }
-
-        pararScanner();
-
-        try {
-          AppState.html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            {
-              fps: 10,
-              qrbox: 250,
-              disableFlip: false,
-              facingMode: "environment"
-            },
-            false
-          );
-
-          AppState.html5QrcodeScanner.render(onScanSuccess, onScanError);
-          AppState.scannerAtivo = true;
-          AppState.scannerPausado = false;
-          atualizarStatusScanner();
-
-          const btnToggle = document.getElementById("btnToggleScanner");
-          if (btnToggle) btnToggle.style.display = "block";
-        } catch (error) {
-          console.error('Erro ao iniciar scanner:', error);
-        }
-      }
-
-      function pararScanner() {
-        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
-          try {
-            AppState.html5QrcodeScanner.clear();
-          } catch (error) {
-            console.warn('Erro ao parar scanner:', error);
-          }
-          AppState.html5QrcodeScanner = null;
-          AppState.scannerAtivo = false;
-          AppState.scannerPausado = false;
-          atualizarStatusScanner();
-        }
-      }
-
-      function pausarScanner() {
-        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && !AppState.scannerPausado) {
-          try {
-            AppState.html5QrcodeScanner.pause();
-            AppState.scannerPausado = true;
-            atualizarStatusScanner();
-          } catch (error) {
-            console.warn('Erro ao pausar scanner:', error);
-          }
-        }
-      }
-
-      function retomarScanner() {
-        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && AppState.scannerPausado) {
-          try {
-            AppState.html5QrcodeScanner.resume();
-            AppState.scannerPausado = false;
-            atualizarStatusScanner();
-          } catch (error) {
-            console.warn('Erro ao retomar scanner:', error);
-          }
-        }
-      }
-
-      function toggleScanner() {
-        AppState.scannerPausado ? retomarScanner() : pausarScanner();
-      }
-
-      function atualizarStatusScanner() {
-        const statusElement = document.getElementById("scannerStatus");
-        const toggleButton = document.getElementById("btnToggleScanner");
-
-        if (!statusElement || !toggleButton) return;
-
-        if (AppState.scannerAtivo) {
-          statusElement.style.display = "block";
-          if (AppState.scannerPausado) {
-            statusElement.className = "scanner-status scanner-paused";
-            statusElement.innerHTML = '<i class="fa fa-pause"></i> Scanner pausado';
-            toggleButton.innerHTML = '<i class="fa fa-play"></i> Retomar Scanner';
+          if (c.status && c.status.includes("Disponível")) {
+            acoesHtml += `
+              <button class="btn btn-sm btn-info" onclick="window.iniciarRetiradaRapida('${c.id}')" title="Retirar">
+                <i class="fa fa-arrow-right"></i>
+              </button>
+            `;
           } else {
-            statusElement.className = "scanner-status scanner-active";
-            statusElement.innerHTML = '<i class="fa fa-camera"></i> Scanner ativo';
-            toggleButton.innerHTML = '<i class="fa fa-pause"></i> Pausar Scanner';
+            acoesHtml += `
+              <button class="btn btn-sm btn-primary" onclick="window.iniciarDevolucaoRapida('${c.id}')" title="Devolver">
+                <i class="fa fa-reply"></i>
+              </button>
+            `;
           }
-        } else {
-          statusElement.style.display = "none";
-        }
+
+          acoesHtml += `</div>`;
+
+          const offlineBadge = isOffline ? ' <span class="badge bg-warning">Offline</span>' : '';
+
+          lista.innerHTML += `
+            <tr>
+              <td>${c.id || ''}</td>
+              <td>${c.nome || ''}</td>
+              <td><span class="${statusBadgeClass}">${c.status || 'Desconhecido'}</span>${offlineBadge}</td>
+              <td>${acoesHtml}</td>
+            </tr>
+          `;
+        });
       }
 
-      function onScanSuccess(decodedText) {
-        pausarScanner();
+      function renderizarColaboradores() {
+        let colList = document.getElementById("listaColaboradores");
+        if (!colList) return;
 
-        const chave = AppState.chaves.find(c => c.id === decodedText);
+        colList.innerHTML = "";
 
-        if (!chave) {
-          document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
-          document.getElementById("areaConfirmacao").style.display = "none";
-          alert("QR Code não encontrado no sistema.");
-          setTimeout(retomarScanner, 2000);
+        if (!isAdmin()) {
+          colList.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center text-warning">Acesso restrito a administradores.</td>
+            </tr>
+          `;
           return;
         }
 
-        AppState.chaveSelecionada = decodedText;
-        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-        document.getElementById("areaConfirmacao").style.display = "block";
-
-        const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
-        document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
-        document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
-        document.getElementById("idColRetirada").placeholder = isDisponivel
-          ? "ID do colaborador que vai RETIRAR"
-          : "ID do colaborador que vai DEVOLVER";
+        AppState.colaboradores.forEach((c, idx) => {
+          colList.innerHTML += `
+            <tr>
+              <td>${c.id || ''}</td>
+              <td>${c.nome || ''}</td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button class="btn btn-sm btn-success" onclick="window.abrirEdicao('colaborador', ${idx})" title="Editar">
+                    <i class="fa fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoColaborador(${idx})" title="Excluir">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
       }
 
-      function onScanError(errorMessage) {
-        // Ignorar erros do scanner
+      function renderizarHistorico() {
+        let hist = document.getElementById("listaHistorico");
+        if (!hist) return;
+
+        hist.innerHTML = "";
+
+        const todosRegistros = [...AppState.historico, ...AppState.historicoPendente];
+        todosRegistros.sort((a, b) => {
+          const dateA = a.dataTimestamp && typeof a.dataTimestamp.toDate === 'function'
+            ? a.dataTimestamp.toDate()
+            : new Date(a.dataTimestamp || 0);
+          const dateB = b.dataTimestamp && typeof b.dataTimestamp.toDate === 'function'
+            ? b.dataTimestamp.toDate()
+            : new Date(b.dataTimestamp || 0);
+          return dateB - dateA;
+        });
+
+        todosRegistros.slice(0, 100).forEach(h => {
+          const acaoClass = h.acao && h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+          const status = h.sincronizado === false
+            ? '<span class="pending-sync">Pendente</span>'
+            : '<span class="badge bg-success">Sincronizado</span>';
+          const usuario = h.usuarioEmail || 'Desconhecido';
+
+          hist.innerHTML += `
+            <tr>
+              <td>${h.chave || ''}${h.nomeChave ? ' - ' + h.nomeChave : ''}</td>
+              <td>${h.colaborador || ''}</td>
+              <td class="${acaoClass}">${h.acao || ''}</td>
+              <td>${h.data || ''}</td>
+              <td>${status}</td>
+              <td>${usuario}</td>
+            </tr>
+          `;
+        });
       }
 
-      function reiniciarScanner() {
-        document.getElementById("areaConfirmacao").style.display = "none";
-        document.getElementById("chaveDetectada").innerText = "Nenhuma";
-        document.getElementById("idColRetirada").value = "";
-        AppState.chaveSelecionada = null;
-        retomarScanner();
+      function atualizarEstatisticas() {
+        const totalDisponiveis = AppState.chaves.filter(c =>
+          c.status === "Disponível" || c.status === "Disponível (Offline)"
+        ).length;
+
+        const totalMovimentacoes = AppState.historico.length + AppState.historicoPendente.length;
+
+        const statChavesTotal = document.getElementById('statChavesTotal');
+        const statChavesDisponiveis = document.getElementById('statChavesDisponiveis');
+        const statColaboradoresTotal = document.getElementById('statColaboradoresTotal');
+        const statMovimentacoesTotal = document.getElementById('statMovimentacoesTotal');
+
+        if (statChavesTotal) statChavesTotal.textContent = AppState.chaves.length;
+        if (statChavesDisponiveis) statChavesDisponiveis.textContent = totalDisponiveis;
+        if (statColaboradoresTotal) statColaboradoresTotal.textContent = AppState.colaboradores.length;
+        if (statMovimentacoesTotal) statMovimentacoesTotal.textContent = totalMovimentacoes;
       }
 
+      // ==============================================
+      // FUNÇÕES DE QR CODE (APENAS ADMIN)
+      // ==============================================
       function gerarQRCode(texto) {
         if (typeof QRCode === 'undefined') {
           console.warn('QRCode não carregado');
@@ -2512,9 +2768,7 @@
       }
 
       function gerarTodosQRCodes() {
-        if (!isAdmin()) {
-          return;
-        }
+        if (!isAdmin()) return;
 
         if (typeof QRCode === 'undefined') {
           console.warn('QRCode não carregado');
@@ -2747,179 +3001,9 @@
         renderizarChaves(chavesFiltradas);
       }
 
-      function atualizarListas() {
-        const totalDisponiveis = AppState.chaves.filter(c =>
-          c.status === "Disponível" || c.status === "Disponível (Offline)"
-        ).length;
-
-        const totalRetiradas = AppState.chaves.length - totalDisponiveis;
-
-        document.getElementById("totalChaves").innerText = AppState.chaves.length;
-        document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
-        document.getElementById("chavesRetiradas").innerText = totalRetiradas;
-        document.getElementById("totalCol").innerText = AppState.colaboradores.length;
-        document.getElementById("totalHist").innerText = AppState.historico.length + AppState.historicoPendente.length;
-
-        renderizarChaves(AppState.chaves);
-        renderizarColaboradores();
-        renderizarHistorico();
-      }
-
-      function renderizarChaves(chavesParaExibir) {
-        let lista = document.getElementById("listaChaves");
-        if (!lista) return;
-
-        lista.innerHTML = "";
-
-        if (!isAdmin()) {
-          lista.innerHTML = `
-            <tr>
-              <td colspan="4" class="text-center text-warning">Acesso restrito a administradores.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        chavesParaExibir.forEach((c) => {
-          const indexOriginal = AppState.chaves.findIndex(item => item.id === c.id);
-          const isOffline = c.status && c.status.includes("Offline");
-
-          const statusBadgeClass = c.status && c.status.includes("Disponível")
-            ? 'badge bg-success'
-            : 'badge bg-danger';
-
-          let acoesHtml = `<div class="btn-group" role="group">`;
-
-          if (isAdmin()) {
-            acoesHtml += `
-              <button class="btn btn-sm btn-warning" onclick="window.abrirEdicao('chave', ${indexOriginal})" title="Editar">
-                <i class="fa fa-edit"></i>
-              </button>
-              <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoChave(${indexOriginal})" title="Excluir">
-                <i class="fa fa-trash"></i>
-              </button>
-            `;
-          }
-
-          if (c.status && c.status.includes("Disponível")) {
-            acoesHtml += `
-              <button class="btn btn-sm btn-info" onclick="window.iniciarRetiradaRapida('${c.id}')" title="Retirar">
-                <i class="fa fa-arrow-right"></i>
-              </button>
-            `;
-          } else {
-            acoesHtml += `
-              <button class="btn btn-sm btn-primary" onclick="window.iniciarDevolucaoRapida('${c.id}')" title="Devolver">
-                <i class="fa fa-reply"></i>
-              </button>
-            `;
-          }
-
-          acoesHtml += `</div>`;
-
-          const offlineBadge = isOffline ? ' <span class="badge bg-warning">Offline</span>' : '';
-
-          lista.innerHTML += `
-            <tr>
-              <td>${c.id || ''}</td>
-              <td>${c.nome || ''}</td>
-              <td><span class="${statusBadgeClass}">${c.status || 'Desconhecido'}</span>${offlineBadge}</td>
-              <td>${acoesHtml}</td>
-            </tr>
-          `;
-        });
-      }
-
-      function renderizarColaboradores() {
-        let colList = document.getElementById("listaColaboradores");
-        if (!colList) return;
-
-        colList.innerHTML = "";
-
-        if (!isAdmin()) {
-          colList.innerHTML = `
-            <tr>
-              <td colspan="3" class="text-center text-warning">Acesso restrito a administradores.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        AppState.colaboradores.forEach((c, idx) => {
-          colList.innerHTML += `
-            <tr>
-              <td>${c.id || ''}</td>
-              <td>${c.nome || ''}</td>
-              <td>
-                <div class="btn-group" role="group">
-                  <button class="btn btn-sm btn-success" onclick="window.abrirEdicao('colaborador', ${idx})" title="Editar">
-                    <i class="fa fa-edit"></i>
-                  </button>
-                  <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoColaborador(${idx})" title="Excluir">
-                    <i class="fa fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `;
-        });
-      }
-
-      function renderizarHistorico() {
-        let hist = document.getElementById("listaHistorico");
-        if (!hist) return;
-
-        hist.innerHTML = "";
-
-        const todosRegistros = [...AppState.historico, ...AppState.historicoPendente];
-        todosRegistros.sort((a, b) => {
-          const dateA = a.dataTimestamp && typeof a.dataTimestamp.toDate === 'function'
-            ? a.dataTimestamp.toDate()
-            : new Date(a.dataTimestamp || 0);
-          const dateB = b.dataTimestamp && typeof b.dataTimestamp.toDate === 'function'
-            ? b.dataTimestamp.toDate()
-            : new Date(b.dataTimestamp || 0);
-          return dateB - dateA;
-        });
-
-        todosRegistros.slice(0, 100).forEach(h => {
-          const acaoClass = h.acao && h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
-          const status = h.sincronizado === false
-            ? '<span class="pending-sync">Pendente</span>'
-            : '<span class="badge bg-success">Sincronizado</span>';
-          const usuario = h.usuarioEmail || 'Desconhecido';
-
-          hist.innerHTML += `
-            <tr>
-              <td>${h.chave || ''}${h.nomeChave ? ' - ' + h.nomeChave : ''}</td>
-              <td>${h.colaborador || ''}</td>
-              <td class="${acaoClass}">${h.acao || ''}</td>
-              <td>${h.data || ''}</td>
-              <td>${status}</td>
-              <td>${usuario}</td>
-            </tr>
-          `;
-        });
-      }
-
-      function atualizarEstatisticas() {
-        const totalDisponiveis = AppState.chaves.filter(c =>
-          c.status === "Disponível" || c.status === "Disponível (Offline)"
-        ).length;
-
-        const totalMovimentacoes = AppState.historico.length + AppState.historicoPendente.length;
-
-        const statChavesTotal = document.getElementById('statChavesTotal');
-        const statChavesDisponiveis = document.getElementById('statChavesDisponiveis');
-        const statColaboradoresTotal = document.getElementById('statColaboradoresTotal');
-        const statMovimentacoesTotal = document.getElementById('statMovimentacoesTotal');
-
-        if (statChavesTotal) statChavesTotal.textContent = AppState.chaves.length;
-        if (statChavesDisponiveis) statChavesDisponiveis.textContent = totalDisponiveis;
-        if (statColaboradoresTotal) statColaboradoresTotal.textContent = AppState.colaboradores.length;
-        if (statMovimentacoesTotal) statMovimentacoesTotal.textContent = totalMovimentacoes;
-      }
-
+      // ==============================================
+      // FUNÇÕES DE RELATÓRIOS (APENAS ADMIN)
+      // ==============================================
       function downloadCSV(filename, rows) {
         const csvContent = rows.map(row =>
           row.map(cell => {
@@ -3107,6 +3191,9 @@
           });
       }
 
+      // ==============================================
+      // FUNÇÕES AUXILIARES (LEITOR, VOZ, ETC)
+      // ==============================================
       function toggleLeitor() {
         const statusLeitor = document.getElementById('statusLeitor');
         const btnLeitor = document.getElementById('btnToggleLeitor');
@@ -3160,7 +3247,33 @@
         document.getElementById("idColRetirada").value = "01";
       }
 
-      // Inicialização dos event listeners
+      // ==============================================
+      // INICIALIZAÇÃO DO SISTEMA
+      // ==============================================
+      function iniciarSistema() {
+        if (!AppState.currentUser) return;
+        if (AppState.isInitialized) return;
+
+        console.log('Iniciando sistema...');
+
+        initFirebase();
+        carregarScriptsSecundarios();
+
+        configurarDetecaoConexao();
+        carregarDadosOffline();
+        carregarChavesFirebase();
+        carregarColaboradoresFirebase();
+        carregarHistoricoFirebase();
+
+        setTimeout(() => sincronizarDadosPendentesSilencioso(), 2000);
+
+        AppState.isInitialized = true;
+        console.log('Sistema iniciado com sucesso!');
+      }
+
+      // ==============================================
+      // EVENT LISTENERS
+      // ==============================================
       function initEventListeners() {
         // Login form
         document.getElementById('loginForm').addEventListener('submit', login);
@@ -3209,12 +3322,22 @@
         document.getElementById('btnBaixarTodosQRCodes').addEventListener('click', baixarTodosQRCodes);
         document.getElementById('btnImprimirQRCodes').addEventListener('click', imprimirQRCodes);
 
+        // Botões de relatório
+        document.getElementById('btnRelatorioChaves').addEventListener('click', gerarRelatorioChaves);
+        document.getElementById('btnRelatorioColaboradores').addEventListener('click', gerarRelatorioColaboradores);
+
         // Modais
         document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
         document.getElementById('btnConfirmarExclusao').addEventListener('click', confirmarExclusao);
+
+        // Botão de pesquisa de chave disponível
+        document.getElementById('btnPesquisarChave').addEventListener('click', listarChavesDisponiveis);
+        document.getElementById('btnReiniciarScanner').addEventListener('click', reiniciarScanner);
       }
 
-      // Inicialização quando o DOM estiver pronto
+      // ==============================================
+      // INICIALIZAÇÃO
+      // ==============================================
       document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM carregado, iniciando sistema...');
 
@@ -3232,7 +3355,9 @@
         }
       });
 
-      // Expor funções globalmente
+      // ==============================================
+      // EXPOSIÇÃO GLOBAL
+      // ==============================================
       window.showLogin = showLogin;
       window.showRegister = showRegister;
       window.showPasswordReset = showPasswordReset;
@@ -3266,6 +3391,8 @@
       window.gerarQRCode = gerarQRCode;
       window.baixarTodosQRCodes = baixarTodosQRCodes;
       window.imprimirQRCodes = imprimirQRCodes;
+      window.listarChavesDisponiveis = listarChavesDisponiveis;
+      window.selecionarChave = selecionarChave;
     })();
   </script>
 
