@@ -1,59 +1,3166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gestão de Chaves — SENAIHUB</title>
 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'">
 
-------------------------------------------------------------------------------------
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
-npm install firebase
+  <style>
+    body {
+      background: #121212;
+      color: #fff;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+    #loginScreen .form-control {
+      background: #222 !important;
+      color: #fff !important;
+      border: 1px solid #444 !important;
+    }
+    #loginScreen .form-control:focus {
+      border-color: #fd790d !important;
+      box-shadow: 0 0 0 0.2rem rgba(253, 121, 13, 0.25) !important;
+    }
+    #loginScreen .alert {
+      background: #dc3545;
+      color: white;
+      border: none;
+    }
+    #loginScreen .text-info {
+      color: #17a2b8 !important;
+      text-decoration: none;
+    }
+    #loginScreen .text-info:hover {
+      color: #138496 !important;
+      text-decoration: underline;
+    }
+    .content-wrapper {
+      margin-left: 250px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .content {
+      padding: 16px;
+      flex-grow: 1;
+    }
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #fff;
+    }
+    input, select, textarea {
+      background: #222 !important;
+      color: #fff !important;
+      border: 1px solid #444 !important;
+    }
+    input::placeholder {
+      color: #aaa !important;
+    }
+    .btn-custom {
+      background: #fd790d;
+      border: none;
+      color: #fff;
+    }
+    .btn-custom:hover {
+      background: #48f005;
+      color: #fff;
+    }
+    .qr-box canvas {
+      display: block;
+      margin: 15px auto 0;
+      width: 200px !important;
+      height: 200px !important;
+    }
+    .table > :not(caption) > * > * {
+      background-color: #1e1e1e;
+      color: #fff;
+      padding: 0.6rem 0.6rem;
+    }
+    .sidebar {
+      height: 100vh;
+      background: #1f1f1f;
+      padding-top: 20px;
+      position: fixed;
+      width: 250px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar .logo-container {
+      padding: 0 15px 20px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      margin-bottom: 20px;
+    }
+    .sidebar .logo-container img {
+      max-width: 100%;
+      height: auto;
+      max-height: 60px;
+    }
+    .sidebar a {
+      color: #999898;
+      padding: 15px 20px;
+      display: block;
+      transition: 0.2s;
+      font-size: 17px;
+      text-decoration: none;
+    }
+    .sidebar a:hover, .activeMenu {
+      background: #333;
+      color: #fff !important;
+    }
+    .user-area {
+      margin-top: auto;
+      border-top: 1px solid #333;
+      padding: 15px 20px;
+      background: #1a1a1a;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: #fd790d;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+    }
+    .login-card {
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid #333;
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .login-logo img {
+      max-width: 150px;
+      height: auto;
+    }
+    .login-title {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 5px;
+      font-weight: 300;
+    }
+    .login-subtitle {
+      text-align: center;
+      color: #999;
+      margin-bottom: 30px;
+      font-size: 0.9em;
+    }
+    .login-error {
+      background: #dc3545;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .login-divider {
+      text-align: center;
+      margin: 20px 0;
+      color: #666;
+      position: relative;
+    }
+    .login-divider::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #333;
+    }
+    .login-divider span {
+      background: #1e1e1e;
+      padding: 0 15px;
+      position: relative;
+    }
+    .footer {
+      background: #1f1f1f;
+      color: #ccc;
+      text-align: center;
+      padding: 15px 20px;
+      font-size: 0.9em;
+      border-top: 1px solid #333;
+      margin-top: auto;
+    }
+    .scanner-status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .scanner-active {
+      background: #1a331a;
+      color: #4CAF50;
+      border: 1px solid #4CAF50;
+    }
+    .scanner-paused {
+      background: #332b1a;
+      color: #FF9800;
+      border: 1px solid #FF9800;
+    }
+    .status-disponivel {
+      color: #4CAF50;
+    }
+    .status-retirada {
+      color: #f44336;
+    }
+    .offline-indicator {
+      background: #ff4444;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    .online-indicator {
+      background: #4CAF50;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    .sync-status {
+      background: #ff9800;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    .pending-sync {
+      background: #ff9800;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
+    .voice-status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .voice-active {
+      background: #1a331a;
+      color: #4CAF50;
+      border: 1px solid #4CAF50;
+    }
+    .voice-inactive {
+      background: #332b1a;
+      color: #FF9800;
+      border: 1px solid #FF9800;
+    }
+    .voice-instruction {
+      background: #2d2d2d;
+      color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+    .report-card {
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .report-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(253, 121, 13, 0.2);
+    }
+    .reset-warning {
+      background: #ff9800;
+      color: #000;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    .reset-btn-enabled {
+      background: #dc3545;
+      border-color: #dc3545;
+    }
+    .reset-btn-enabled:hover {
+      background: #c82333;
+      border-color: #bd2130;
+    }
+    .profile-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      background: #2d2d2d;
+      color: #fd790d;
+      border: 1px solid #444;
+    }
+    .access-denied-card {
+      background: #2a1f1f;
+      border: 1px solid #7a2d2d;
+      color: #ffb3b3;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding-top: 10px;
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        border-bottom: 1px solid #333;
+      }
+      .sidebar a {
+        display: inline-block;
+        padding: 10px 15px;
+        font-size: 15px;
+      }
+      .sidebar .logo-container {
+        display: block;
+        text-align: center;
+        width: 100%;
+        border-bottom: none;
+        margin-bottom: 5px;
+      }
+      .content-wrapper {
+        margin-left: 0;
+        padding-top: 10px;
+      }
+      .user-area {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="logo.png" alt="SENAIHUB Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTUwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iNjAiIGZpbGw9IiNGRjc5MEQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSI+U0VOQUlIVUI8L3RleHQ+PC9zdmc+';">
+      </div>
+      <h2 class="login-title">Gestão de Chaves SENAIHUB</h2>
+      <p class="login-subtitle">Faça login para acessar o sistema</p>
+      <div id="loginError" class="login-error"></div>
+      <div id="loginMessage" class="login-error" style="background: #ff9800; display: none;"></div>
 
+      <form id="loginForm">
+        <div class="mb-3">
+          <label for="loginEmail" class="form-label text-white">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="seu@email.com" required>
+        </div>
+        <div class="mb-3">
+          <label for="loginPassword" class="form-label text-white">Senha</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Sua senha" required>
+          <div class="form-text text-muted">
+            <a href="#" onclick="showPasswordReset()" class="text-info" style="font-size: 0.9em;">Esqueceu a senha?</a>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-custom w-100 mb-3" id="btnLogin">
+          <i class="fa fa-sign-in-alt"></i> Entrar
+        </button>
+        <div class="login-divider">
+          <span>ou</span>
+        </div>
+        <div class="text-center">
+          <a href="#" onclick="showRegister()" class="text-info">Criar nova conta</a>
+        </div>
+      </form>
 
-------------------------------------------------------------------------------------
+      <form id="registerForm" style="display: none;">
+        <div class="mb-3">
+          <label for="registerName" class="form-label text-white">Nome completo</label>
+          <input type="text" id="registerName" class="form-control" placeholder="Seu nome" required>
+        </div>
+        <div class="mb-3">
+          <label for="registerEmail" class="form-label text-white">Email</label>
+          <input type="email" id="registerEmail" class="form-control" placeholder="seu@email.com" required>
+        </div>
+        <div class="mb-3">
+          <label for="registerPassword" class="form-label text-white">Senha (mínimo 6 caracteres)</label>
+          <input type="password" id="registerPassword" class="form-control" placeholder="Sua senha" minlength="6" required>
+        </div>
+        <div class="mb-3">
+          <label for="registerConfirmPassword" class="form-label text-white">Confirmar senha</label>
+          <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirme a senha" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100 mb-3" id="btnRegister">
+          <i class="fa fa-user-plus"></i> Criar conta
+        </button>
+        <div class="text-center">
+          <a href="#" onclick="showLogin()" class="text-info">Voltar para login</a>
+        </div>
+      </form>
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+      <form id="resetPasswordForm" style="display: none;">
+        <div class="mb-3">
+          <label for="resetEmail" class="form-label text-white">Email</label>
+          <input type="email" id="resetEmail" class="form-control" placeholder="seu@email.com" required>
+          <div class="form-text text-muted">
+            Enviaremos um link para redefinir sua senha.
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning w-100 mb-3" id="btnResetPassword">
+          <i class="fa fa-envelope"></i> Enviar link de recuperação
+        </button>
+        <div class="text-center">
+          <a href="#" onclick="showLogin()" class="text-info">Voltar para login</a>
+        </div>
+      </form>
+    </div>
+  </div>
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8",
-  authDomain: "gestao-chaves-app.firebaseapp.com",
-  projectId: "gestao-chaves-app",
-  storageBucket: "gestao-chaves-app.firebasestorage.app",
-  messagingSenderId: "391255964652",
-  appId: "1:391255964652:web:6d27bb36bc9ff520349ec9"
-};
+  <div id="appContent" style="display: none; flex-direction: column; min-height: 100vh;">
+    <div class="sidebar">
+      <div class="logo-container">
+        <img src="logo.png" alt="SENAIHUB Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTUwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iNjAiIGZpbGw9IiNGRjc5MEQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSI+U0VOQUlIVUI8L3RleHQ+PC9zdmc+';">
+      </div>
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+      <a href="#" data-role="all" onclick="showPage('home', event)" class="activeMenu">
+        <i class="fa fa-home"></i> Home
+      </a>
+      <a href="#" data-role="admin" onclick="showPage('chaves', event)">
+        <i class="fa fa-key"></i> Chaves
+      </a>
+      <a href="#" data-role="admin" onclick="showPage('colaboradores', event)">
+        <i class="fa fa-users"></i> Colaboradores
+      </a>
+      <a href="#" data-role="admin" onclick="showPage('qr-codes', event)">
+        <i class="fa fa-qrcode"></i> Todos QR Codes
+      </a>
+      <a href="#" data-role="all" onclick="showPage('historico', event)">
+        <i class="fa fa-clock-rotate-left"></i> Histórico
+      </a>
+      <a href="#" data-role="all" onclick="showPage('qr', event)">
+        <i class="fa fa-camera"></i> Retirar por QR Code
+      </a>
+      <a href="#" data-role="admin" onclick="showPage('relatorios', event)">
+        <i class="fa fa-chart-bar"></i> Relatórios
+      </a>
+      <a href="#" data-role="admin" onclick="showPage('offline', event)">
+        <i class="fa fa-cloud"></i> Dados Offline
+      </a>
 
+      <div class="user-area">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div>
+            <div class="text-white small" id="userName">Usuário</div>
+            <div class="text-muted x-small" id="userEmailDisplay">email@exemplo.com</div>
+            <div id="userRoleBadge" class="profile-badge">perfil</div>
+          </div>
+        </div>
+        <a href="#" onclick="logout()" class="text-danger" style="display: block; text-align: center;">
+          <i class="fa fa-sign-out-alt"></i> Sair
+        </a>
+      </div>
+    </div>
 
+    <div class="content-wrapper">
+      <div class="content">
+        <div id="onlineIndicator" class="online-indicator">
+          <i class="fa fa-wifi"></i> Conectado - Dados sincronizados
+        </div>
+        <div id="offlineIndicator" class="offline-indicator">
+          <i class="fa fa-wifi-slash"></i> Modo Offline - Dados serão sincronizados quando a conexão voltar
+        </div>
+        <div id="syncStatus" class="sync-status">
+          <i class="fa fa-refresh fa-spin"></i> Sincronizando dados pendentes...
+        </div>
 
-____________________________________________________________________________________________________
+        <section id="home">
+          <h1 class="mb-4">Dashboard</h1>
+          <p class="text-muted">
+            Bem-vindo, <span id="welcomeUser">Usuário</span>!
+            <span id="welcomeRole" class="profile-badge ms-2">perfil</span>
+          </p>
+          <hr/>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="card p-4">
+                <h3><i class="fa fa-key text-info"></i> Chaves</h3>
+                <p class="mb-0">Total Registradas: <span id="totalChaves" class="fw-bold">0</span></p>
+                <p class="mb-0">Disponíveis: <span id="chavesDisponiveis" class="fw-bold">0</span></p>
+                <p class="mb-0">Retiradas: <span id="chavesRetiradas" class="fw-bold">0</span></p>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card p-4">
+                <h3><i class="fa fa-users text-warning"></i> Colaboradores</h3>
+                <p>Total: <span id="totalCol" class="fw-bold">0</span></p>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card p-4">
+                <h3><i class="fa fa-clock-rotate-left text-success"></i> Histórico</h3>
+                <p>Total: <span id="totalHist" class="fw-bold">0</span></p>
+                <p class="mb-0">Pendentes: <span id="pendentesSync" class="fw-bold text-warning">0</span></p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-/* ==================================
-    CONFIGURAÇÃO DO FIREBASE (PASSO 6)
-================================== */
-const firebaseConfig = {
-  // ATENÇÃO: SUBSTITUA ESTAS CHAVES PELAS SUAS!
-  apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8", 
-  authDomain: "gestao-chaves-app.firebaseapp.com",
-  projectId: "gestao-chaves-app", 
-  storageBucket:"gestao-chaves-app.firebasestorage.app",
-  messagingSenderId: "391255964652",
-  appId: "1:391255964652:web:6d27bb36bc9ff520349ec9"
+        <section id="chaves" style="display:none;">
+          <h2><i class="fa fa-key text-info"></i> Gestão de Chaves</h2>
+          <hr/>
+          <div class="card p-4 mt-3">
+            <h4>Cadastrar Chave</h4>
+            <input id="nomeChave" placeholder="Nome da chave (Ex: Sala 101)" class="form-control mt-2">
+            <button class="btn btn-custom mt-2" onclick="cadastrarChave()">
+              <i class="fa fa-plus"></i> Cadastrar e Gerar QR Code
+            </button>
+            <div id="qrCodeArea" class="qr-box text-center mt-3"></div>
+          </div>
+          <div class="card p-3 mt-4">
+            <h4>Buscar Chaves</h4>
+            <input id="buscaChaves" class="form-control" placeholder="Pesquisar por ID ou nome..." onkeyup="filtrarChaves()">
+          </div>
+          <div class="card mt-3 p-3">
+            <h4>Lista de Chaves</h4>
+            <div class="table-responsive">
+              <table class="table table-dark table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="listaChaves"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-};
+        <section id="colaboradores" style="display:none;">
+          <h2><i class="fa fa-users text-warning"></i> Gestão de Colaboradores</h2>
+          <hr/>
+          <div class="card p-4 mt-3">
+            <h4>Cadastrar Colaborador</h4>
+            <input id="nomeColaborador" placeholder="Nome do colaborador" class="form-control mt-2">
+            <button class="btn btn-custom mt-3" onclick="cadastrarColaborador()">
+              <i class="fa fa-user-plus"></i> Cadastrar
+            </button>
+            <p class="mt-3 mb-0"><b>Último ID gerado:</b> <span id="ultimoColID" class="fw-bold">Nenhum</span></p>
+          </div>
+          <div class="card mt-4 p-4">
+            <h4>Lista de Colaboradores</h4>
+            <div class="table-responsive">
+              <table class="table table-dark table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="listaColaboradores"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-let db = null; // Variável para o banco de dados
+        <section id="qr-codes" style="display:none;">
+          <h2><i class="fa fa-qrcode text-info"></i> Todos os QR Codes</h2>
+          <hr/>
+          <div class="card p-4">
+            <h4>QR Codes para Impressão</h4>
+            <p class="text-muted">Todos os QR codes das chaves cadastradas no sistema. Clique em "Baixar" para salvar individualmente.</p>
+            <div class="mb-3">
+              <button class="btn btn-success" onclick="baixarTodosQRCodes()">
+                <i class="fa fa-download"></i> Baixar Todos os QR Codes (ZIP)
+              </button>
+              <button class="btn btn-info ms-2" onclick="imprimirQRCodes()">
+                <i class="fa fa-print"></i> Imprimir Todos
+              </button>
+            </div>
+            <div id="qrCodesContainer" class="qr-grid" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;"></div>
+          </div>
+        </section>
 
-function iniciarSistema() {
-    // Inicializa o Firebase e o Firestore
-    const app = firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
+        <section id="historico" style="display:none;">
+          <h2><i class="fa fa-clock-rotate-left text-success"></i> Histórico de Movimentações</h2>
+          <hr/>
+          <div class="card p-3 mb-4" id="historicoActionsCard">
+            <h4>Relatórios</h4>
+            <button class="btn btn-success mt-2" id="btnHistoricoCsv" onclick="gerarRelatorioHistorico()">
+              <i class="fa fa-download"></i> Baixar Relatório Completo (CSV)
+            </button>
+            <button class="btn btn-warning mt-2 ms-2" id="btnHistoricoSync" onclick="sincronizarDadosPendentes()">
+              <i class="fa fa-refresh"></i> Sincronizar Dados Pendentes
+            </button>
+          </div>
+          <div class="card mt-3 p-3">
+            <div class="table-responsive">
+              <table class="table table-dark table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>Chave (ID)</th>
+                    <th>Colaborador</th>
+                    <th>Ação</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Usuário</th>
+                  </tr>
+                </thead>
+                <tbody id="listaHistorico"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-    // Inicia os listeners (carregamento em tempo real)
-    carregarChavesFirebase();
-    carregarColaboradoresFirebase();
-    carregarHistoricoFirebase();
+        <section id="qr" style="display:none;">
+          <h2><i class="fa fa-qrcode text-info"></i> Retirada por QR Code</h2>
+          <hr/>
+          <div class="card p-4 mt-3">
+            <h4>Escanear QR Code da Chave</h4>
+            <div class="card p-3 mb-3 leitor-section">
+              <h5><i id="iconeLeitor" class="fa fa-barcode text-muted"></i> Leitor de Código de Barras LB-W110BK</h5>
+              <div class="row align-items-center">
+                <div class="col-md-6">
+                  <p class="mb-1"><strong>Status:</strong> <span id="statusLeitor" class="badge bg-danger">Desconectado</span></p>
+                  <small class="text-muted">Modo: Emulação de Teclado</small>
+                </div>
+                <div class="col-md-6 text-end">
+                  <button id="btnToggleLeitor" class="btn btn-success btn-sm" onclick="toggleLeitor()">
+                    <i class="fa fa-plug"></i> Conectar Leitor
+                  </button>
+                  <button class="btn btn-info btn-sm ms-2" onclick="testarLeitor()">
+                    <i class="fa fa-test"></i> Testar
+                  </button>
+                </div>
+              </div>
+              <div class="mt-2">
+                <small class="text-info">
+                  <i class="fa fa-info-circle"></i>
+                  Conecte o leitor via USB e clique em "Conectar Leitor". O leitor funciona automaticamente como um teclado.
+                </small>
+              </div>
+            </div>
 
-    document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
-}
+            <div class="card p-3 mb-3 voice-control-section">
+              <h5><i id="iconeVoz" class="fa fa-microphone text-muted"></i> Assistente de Voz</h5>
+              <div class="row align-items-center">
+                <div class="col-md-6">
+                  <p class="mb-1"><strong>Status:</strong> <span id="statusVoz" class="badge bg-danger">Inativo</span></p>
+                  <small class="text-muted">Reconhecimento de voz para ID do colaborador</small>
+                </div>
+                <div class="col-md-6 text-end">
+                  <button id="btnToggleVoz" class="btn btn-success btn-sm" onclick="toggleReconhecimentoVoz()">
+                    <i class="fa fa-microphone"></i> Ativar Voz
+                  </button>
+                  <button class="btn btn-info btn-sm ms-2" onclick="testarVoz()">
+                    <i class="fa fa-test"></i> Testar Voz
+                  </button>
+                </div>
+              </div>
+              <div id="voiceStatus" class="voice-status voice-inactive" style="display: none;">
+                <i class="fa fa-microphone"></i> Aguardando comando de voz...
+              </div>
+              <div class="voice-instruction">
+                <strong>Instruções:</strong> Após escanear o QR Code da chave, o sistema perguntará "Qual o ID do colaborador?".
+                Responda com o número do ID (exemplo: "zero um" para ID 01).
+              </div>
+              <div class="mt-2">
+                <small class="text-info">
+                  <i class="fa fa-info-circle"></i>
+                  O reconhecimento de voz funciona melhor com fones de ouvido e em ambiente silencioso.
+                </small>
+              </div>
+            </div>
+
+            <div id="scannerStatus" class="scanner-status scanner-active" style="display: none;">
+              <i class="fa fa-camera"></i> Scanner de câmera ativo
+            </div>
+            <div id="reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+            <div class="mt-3 text-center">
+              <button id="btnToggleScanner" class="btn btn-outline-warning btn-sm" onclick="toggleScanner()" style="display: none;">
+                <i class="fa fa-pause"></i> Pausar Scanner Câmera
+              </button>
+            </div>
+            <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
+            <div id="areaConfirmacao" style="display: none;">
+              <div class="input-group">
+                <input id="idColRetirada" placeholder="ID do colaborador (use o leitor ou voz)" class="form-control">
+                <button class="btn btn-outline-secondary" type="button" onclick="testarLeitor()">
+                  <i class="fa fa-barcode"></i> Testar Leitor
+                </button>
+                <button class="btn btn-outline-info" type="button" onclick="iniciarReconhecimentoVoz()">
+                  <i class="fa fa-microphone"></i> Voz
+                </button>
+              </div>
+              <small class="text-muted d-block mt-1">
+                Aponte o leitor para o código de barras do ID do colaborador OU use o comando de voz
+              </small>
+              <div class="mt-3">
+                <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="confirmarRetirada()">
+                  <i class="fa fa-check"></i> Confirmar Retirada
+                </button>
+                <button id="btnDevolverChave" class="btn btn-primary w-100 mt-2" onclick="confirmarDevolucao()">
+                  <i class="fa fa-reply"></i> Confirmar Devolução
+                </button>
+              </div>
+              <button class="btn btn-outline-light w-100 mt-2" onclick="reiniciarScanner()">
+                <i class="fa fa-refresh"></i> Escanear Novamente
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="relatorios" style="display:none;">
+          <h2><i class="fa fa-chart-bar text-warning"></i> Relatórios do Sistema</h2>
+          <hr/>
+
+          <div id="resetHistoricoContainer" style="display: none;">
+            <div class="reset-warning">
+              <i class="fa fa-exclamation-triangle"></i>
+              Você baixou o relatório de histórico. Recomendamos limpar o histórico para não sobrecarregar o banco de dados.
+            </div>
+            <button id="btnResetHistorico" class="btn btn-danger w-100 mb-4" onclick="resetarHistorico()" disabled>
+              <i class="fa fa-trash"></i> LIMPAR HISTÓRICO COMPLETO
+            </button>
+            <div id="resetTimer" class="text-center mb-4" style="color: #ff9800;">
+              Botão disponível por: <span id="timerCountdown">60</span> segundos
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <div class="card report-card p-4 h-100" onclick="gerarRelatorioChaves()">
+                <div class="text-center">
+                  <i class="fa fa-key fa-3x text-info mb-3"></i>
+                  <h4>Relatório de Chaves</h4>
+                  <p class="text-muted">Lista completa de todas as chaves cadastradas com seus status atualizados</p>
+                  <button class="btn btn-info w-100">
+                    <i class="fa fa-download"></i> Gerar Relatório
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="card report-card p-4 h-100" onclick="gerarRelatorioColaboradores()">
+                <div class="text-center">
+                  <i class="fa fa-users fa-3x text-warning mb-3"></i>
+                  <h4>Relatório de Colaboradores</h4>
+                  <p class="text-muted">Lista completa de todos os colaboradores cadastrados no sistema</p>
+                  <button class="btn btn-warning w-100">
+                    <i class="fa fa-download"></i> Gerar Relatório
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="card report-card p-4 h-100" onclick="gerarRelatorioHistorico()">
+                <div class="text-center">
+                  <i class="fa fa-history fa-3x text-success mb-3"></i>
+                  <h4>Relatório de Histórico</h4>
+                  <p class="text-muted">Histórico completo de todas as movimentações do sistema</p>
+                  <button class="btn btn-success w-100">
+                    <i class="fa fa-download"></i> Gerar Relatório
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="card report-card p-4 h-100" onclick="gerarRelatorioCompleto()">
+                <div class="text-center">
+                  <i class="fa fa-file-alt fa-3x text-primary mb-3"></i>
+                  <h4>Relatório Completo</h4>
+                  <p class="text-muted">Relatório consolidado com todos os dados do sistema</p>
+                  <button class="btn btn-primary w-100">
+                    <i class="fa fa-download"></i> Gerar Relatório
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-4 p-4">
+            <h4>Estatísticas do Sistema</h4>
+            <div class="row text-center">
+              <div class="col-md-3">
+                <div class="card bg-dark p-3">
+                  <h3 id="statChavesTotal">0</h3>
+                  <p class="mb-0">Total de Chaves</p>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-dark p-3">
+                  <h3 id="statChavesDisponiveis">0</h3>
+                  <p class="mb-0">Chaves Disponíveis</p>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-dark p-3">
+                  <h3 id="statColaboradoresTotal">0</h3>
+                  <p class="mb-0">Colaboradores</p>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-dark p-3">
+                  <h3 id="statMovimentacoesTotal">0</h3>
+                  <p class="mb-0">Movimentações</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="offline" style="display:none;">
+          <h2><i class="fa fa-cloud text-warning"></i> Gerenciamento de Dados Offline</h2>
+          <hr/>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <div class="card p-4">
+                <h4><i class="fa fa-database"></i> Status de Sincronização</h4>
+                <p><strong>Status da Conexão:</strong> <span id="statusConexao" class="badge bg-success">Online</span></p>
+                <p><strong>Movimentações Pendentes:</strong> <span id="contadorPendentes" class="fw-bold text-warning">0</span></p>
+                <p><strong>Última Sincronização:</strong> <span id="ultimaSync" class="fw-bold">Nunca</span></p>
+                <button class="btn btn-warning w-100 mt-3" onclick="sincronizarDadosPendentes()">
+                  <i class="fa fa-refresh"></i> Sincronizar Agora
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="card p-4">
+                <h4><i class="fa fa-info-circle"></i> Informações Offline</h4>
+                <p>O sistema funciona mesmo sem internet. As movimentações são salvas localmente e sincronizadas automaticamente quando a conexão voltar.</p>
+                <div class="alert alert-info mt-3">
+                  <small>
+                    <strong>Dicas:</strong><br>
+                    • Todas as operações funcionam offline<br>
+                    • Os dados são sincronizados automaticamente<br>
+                    • O histórico mostra o status de cada registro
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mt-4 p-4">
+            <h4>Movimentações Pendentes de Sincronização</h4>
+            <div class="table-responsive">
+              <table class="table table-dark table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>Chave</th>
+                    <th>Colaborador</th>
+                    <th>Ação</th>
+                    <th>Data Local</th>
+                    <th>Usuário</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="listaPendentes"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
+        <p>Versão 3.5.0 (RBAC Admin/Vigilante + Vercel + Firebase)</p>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalConfirmarExclusao" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar Exclusão</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="mensagemExclusao">Tem certeza que deseja excluir este item?</p>
+          <p class="text-warning"><strong>Atenção:</strong> Esta ação não pode ser desfeita!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="modalInput" class="form-label text-white">Novo Nome:</label>
+          <input id="modalInput" class="form-control" placeholder="Digite o novo nome">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" id="btnSalvarEdicao">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8",
+        authDomain: "gestao-chaves-app.firebaseapp.com",
+        projectId: "gestao-chaves-app",
+        storageBucket: "gestao-chaves-app.firebasestorage.app",
+        messagingSenderId: "391255964652",
+        appId: "1:391255964652:web:6d27bb36bc9ff520349ec9"
+      };
+
+      const AppState = {
+        firebaseApp: null,
+        db: null,
+        currentUser: null,
+        userProfile: null,
+        userRole: null,
+
+        chaves: [],
+        colaboradores: [],
+        historico: [],
+        historicoPendente: [],
+
+        contadorChave: 0,
+        contadorColaborador: 0,
+
+        unsubscribes: {
+          chaves: null,
+          colaboradores: null,
+          historico: null
+        },
+
+        html5QrcodeScanner: null,
+        scannerAtivo: false,
+        scannerPausado: false,
+
+        chaveSelecionada: null,
+        itemEditando: null,
+        tipoEdicao: null,
+        chaveParaExcluir: null,
+        colaboradorParaExcluir: null,
+
+        isOnline: navigator.onLine,
+        syncTimeout: null,
+        resetTimerInterval: null,
+        resetTimerSeconds: 0,
+
+        isInitialized: false,
+        authListenerRegistered: false,
+        connectionListenersAttached: false,
+
+        reset() {
+          this.pararTodosListeners();
+          this.pararScannerCompleto();
+          this.limparTimeouts();
+
+          this.currentUser = null;
+          this.userProfile = null;
+          this.userRole = null;
+
+          this.chaves = [];
+          this.colaboradores = [];
+          this.historico = [];
+          this.contadorChave = 0;
+          this.contadorColaborador = 0;
+          this.chaveSelecionada = null;
+          this.itemEditando = null;
+          this.tipoEdicao = null;
+          this.chaveParaExcluir = null;
+          this.colaboradorParaExcluir = null;
+          this.isInitialized = false;
+        },
+
+        pararTodosListeners() {
+          if (this.unsubscribes.chaves) { this.unsubscribes.chaves(); this.unsubscribes.chaves = null; }
+          if (this.unsubscribes.colaboradores) { this.unsubscribes.colaboradores(); this.unsubscribes.colaboradores = null; }
+          if (this.unsubscribes.historico) { this.unsubscribes.historico(); this.unsubscribes.historico = null; }
+        },
+
+        pararScannerCompleto() {
+          if (this.html5QrcodeScanner) {
+            try {
+              this.html5QrcodeScanner.clear();
+            } catch (e) {
+              console.warn('Erro ao limpar scanner:', e);
+            }
+            this.html5QrcodeScanner = null;
+          }
+          this.scannerAtivo = false;
+          this.scannerPausado = false;
+        },
+
+        limparTimeouts() {
+          if (this.syncTimeout) clearTimeout(this.syncTimeout);
+          if (this.resetTimerInterval) clearInterval(this.resetTimerInterval);
+        }
+      };
+
+      function initFirebase() {
+        if (AppState.firebaseApp) return AppState.firebaseApp;
+
+        if (typeof firebase === 'undefined') {
+          console.error('Firebase SDK não carregado');
+          return null;
+        }
+
+        try {
+          if (firebase.apps.length === 0) {
+            AppState.firebaseApp = firebase.initializeApp(firebaseConfig);
+            console.log('Firebase inicializado com sucesso');
+          } else {
+            AppState.firebaseApp = firebase.app();
+            console.log('Firebase já inicializado');
+          }
+
+          AppState.db = firebase.firestore();
+
+          AppState.db.settings({
+            cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+            ignoreUndefinedProperties: true
+          });
+
+          AppState.db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+            if (err.code === 'failed-precondition') {
+              console.warn('Persistência offline falhou - múltiplas abas abertas');
+            } else if (err.code === 'unimplemented') {
+              console.warn('Persistência offline não suportada pelo navegador');
+            }
+          });
+
+          return AppState.firebaseApp;
+        } catch (error) {
+          console.error('Erro ao inicializar Firebase:', error);
+          return null;
+        }
+      }
+
+      function carregarScriptsSecundarios() {
+        const scripts = [
+          { src: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', name: 'QRCode' },
+          { src: 'https://unpkg.com/html5-qrcode', name: 'Html5QrcodeScanner' },
+          { src: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', name: 'JSZip' },
+          { src: 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js', name: 'saveAs' }
+        ];
+
+        scripts.forEach(script => {
+          if (!window[script.name]) {
+            const s = document.createElement('script');
+            s.src = script.src;
+            s.async = true;
+            s.defer = true;
+            document.head.appendChild(s);
+          }
+        });
+      }
+
+      async function carregarPerfilUsuario(uid) {
+        try {
+          const doc = await AppState.db.collection('usuarios').doc(uid).get();
+
+          if (!doc.exists) {
+            AppState.userProfile = null;
+            AppState.userRole = 'vigilante';
+            return;
+          }
+
+          const data = doc.data() || {};
+          AppState.userProfile = data;
+          AppState.userRole = data.tipo || 'vigilante';
+        } catch (error) {
+          console.error('Erro ao carregar perfil do usuário:', error);
+          AppState.userProfile = null;
+          AppState.userRole = 'vigilante';
+        }
+      }
+
+      function isAdmin() {
+        return AppState.userRole === 'admin';
+      }
+
+      function isVigilante() {
+        return AppState.userRole === 'vigilante';
+      }
+
+      function canManageKeys() {
+        return isAdmin();
+      }
+
+      function canManageCollaborators() {
+        return isAdmin();
+      }
+
+      function canViewReports() {
+        return isAdmin();
+      }
+
+      function canResetHistory() {
+        return isAdmin();
+      }
+
+      function canOperateFlow() {
+        return isAdmin() || isVigilante();
+      }
+
+      function canAccessPage(page) {
+        const adminPages = ['chaves', 'colaboradores', 'qr-codes', 'relatorios', 'offline'];
+        const flowPages = ['home', 'historico', 'qr'];
+
+        if (adminPages.includes(page)) return isAdmin();
+        if (flowPages.includes(page)) return canOperateFlow();
+        return false;
+      }
+
+      function requirePermission(checkFn, message = 'Você não tem permissão para esta ação.') {
+        if (!AppState.currentUser) {
+          alert('Você precisa estar logado.');
+          return false;
+        }
+
+        if (!checkFn()) {
+          alert(message);
+          return false;
+        }
+
+        return true;
+      }
+
+      function getRoleLabel(role) {
+        if (role === 'admin') return 'Administrador';
+        if (role === 'vigilante') return 'Vigilante';
+        return 'Usuário';
+      }
+
+      function aplicarPermissoesUI() {
+        const role = AppState.userRole || 'vigilante';
+
+        document.querySelectorAll('.sidebar a[data-role]').forEach(link => {
+          const allowedRole = link.getAttribute('data-role');
+
+          if (allowedRole === 'all' || allowedRole === role) {
+            link.style.display = 'block';
+          } else {
+            link.style.display = 'none';
+          }
+        });
+
+        const roleBadge = document.getElementById('userRoleBadge');
+        const welcomeRole = document.getElementById('welcomeRole');
+
+        if (roleBadge) roleBadge.textContent = getRoleLabel(role);
+        if (welcomeRole) welcomeRole.textContent = getRoleLabel(role);
+
+        const btnHistoricoCsv = document.getElementById('btnHistoricoCsv');
+        const btnHistoricoSync = document.getElementById('btnHistoricoSync');
+
+        if (btnHistoricoCsv) {
+          btnHistoricoCsv.style.display = canViewReports() ? 'inline-block' : 'none';
+        }
+
+        if (btnHistoricoSync) {
+          btnHistoricoSync.style.display = canOperateFlow() ? 'inline-block' : 'inline-block';
+        }
+
+        const resetContainer = document.getElementById('resetHistoricoContainer');
+        if (resetContainer && !isAdmin()) {
+          resetContainer.style.display = 'none';
+        }
+      }
+
+      function registrarListenerAuth() {
+        if (AppState.authListenerRegistered) return;
+
+        const app = initFirebase();
+        if (!app) return;
+
+        firebase.auth().onAuthStateChanged(async (user) => {
+          if (user) {
+            console.log('Auth: usuário autenticado', user.email);
+            AppState.currentUser = user;
+            await carregarPerfilUsuario(user.uid);
+            showAppContent();
+          } else {
+            console.log('Auth: nenhum usuário autenticado');
+            hideAppContent();
+            AppState.reset();
+          }
+        }, (error) => {
+          console.error('Auth: erro no listener', error);
+          hideAppContent();
+        });
+
+        AppState.authListenerRegistered = true;
+      }
+
+      function login(event) {
+        event.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorElement = document.getElementById('loginError');
+
+        errorElement.style.display = 'none';
+
+        const btnLogin = document.getElementById('btnLogin');
+        const originalText = btnLogin.innerHTML;
+        btnLogin.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Entrando...';
+        btnLogin.disabled = true;
+
+        initFirebase();
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(async (userCredential) => {
+            console.log('Login: sucesso', userCredential.user.email);
+            AppState.currentUser = userCredential.user;
+            await carregarPerfilUsuario(userCredential.user.uid);
+            showAppContent();
+          })
+          .catch((error) => {
+            console.error('Login: erro', error.code);
+            let errorMessage = 'Erro ao fazer login. ';
+            switch(error.code) {
+              case 'auth/invalid-email': errorMessage += 'Email inválido.'; break;
+              case 'auth/user-disabled': errorMessage += 'Conta desativada.'; break;
+              case 'auth/user-not-found': errorMessage += 'Usuário não encontrado.'; break;
+              case 'auth/wrong-password': errorMessage += 'Senha incorreta.'; break;
+              case 'auth/network-request-failed': errorMessage += 'Erro de conexão.'; break;
+              default: errorMessage += error.message;
+            }
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+          })
+          .finally(() => {
+            btnLogin.innerHTML = originalText;
+            btnLogin.disabled = false;
+          });
+      }
+
+      function register(event) {
+        event.preventDefault();
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('registerConfirmPassword').value;
+        const errorElement = document.getElementById('loginError');
+
+        errorElement.style.display = 'none';
+
+        if (password !== confirmPassword) {
+          errorElement.textContent = 'As senhas não coincidem.';
+          errorElement.style.display = 'block';
+          return;
+        }
+
+        if (password.length < 6) {
+          errorElement.textContent = 'Senha deve ter no mínimo 6 caracteres.';
+          errorElement.style.display = 'block';
+          return;
+        }
+
+        const btnRegister = document.getElementById('btnRegister');
+        const originalText = btnRegister.innerHTML;
+        btnRegister.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Criando conta...';
+        btnRegister.disabled = true;
+
+        initFirebase();
+
+        firebase.auth().createUserWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            return userCredential.user.updateProfile({ displayName: name })
+              .then(() => userCredential);
+          })
+          .then((userCredential) => {
+            AppState.currentUser = userCredential.user;
+            return AppState.db.collection('usuarios').doc(AppState.currentUser.uid).set({
+              name: name,
+              email: email,
+              dataCriacao: firebase.firestore.FieldValue.serverTimestamp(),
+              tipo: 'vigilante'
+            }, { merge: true });
+          })
+          .then(async () => {
+            await carregarPerfilUsuario(AppState.currentUser.uid);
+            alert('Conta criada com sucesso! Perfil definido como VIGILANTE.');
+            showAppContent();
+          })
+          .catch((error) => {
+            console.error('Registro: erro', error.code);
+            let errorMessage = 'Erro ao criar conta. ';
+            switch(error.code) {
+              case 'auth/email-already-in-use': errorMessage += 'Email já está em uso.'; break;
+              case 'auth/invalid-email': errorMessage += 'Email inválido.'; break;
+              case 'auth/weak-password': errorMessage += 'Senha muito fraca.'; break;
+              default: errorMessage += error.message;
+            }
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+          })
+          .finally(() => {
+            btnRegister.innerHTML = originalText;
+            btnRegister.disabled = false;
+          });
+      }
+
+      function resetPassword(event) {
+        event.preventDefault();
+        const email = document.getElementById('resetEmail').value;
+        const errorElement = document.getElementById('loginError');
+
+        errorElement.style.display = 'none';
+
+        const btnReset = document.getElementById('btnResetPassword');
+        const originalText = btnReset.innerHTML;
+        btnReset.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+        btnReset.disabled = true;
+
+        initFirebase();
+
+        firebase.auth().sendPasswordResetEmail(email)
+          .then(() => {
+            alert('Email de recuperação enviado!');
+            showLogin();
+          })
+          .catch((error) => {
+            let errorMessage = 'Erro ao enviar email. ';
+            switch(error.code) {
+              case 'auth/invalid-email': errorMessage += 'Email inválido.'; break;
+              case 'auth/user-not-found': errorMessage += 'Usuário não encontrado.'; break;
+              default: errorMessage += error.message;
+            }
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+          })
+          .finally(() => {
+            btnReset.innerHTML = originalText;
+            btnReset.disabled = false;
+          });
+      }
+
+      function logout() {
+        if (confirm('Tem certeza que deseja sair?')) {
+          AppState.pararTodosListeners();
+          AppState.pararScannerCompleto();
+          AppState.limparTimeouts();
+
+          firebase.auth().signOut()
+            .then(() => {
+              console.log('Logout: sucesso');
+              AppState.reset();
+              hideAppContent();
+              showLogin();
+            })
+            .catch((error) => {
+              console.error('Logout: erro', error);
+              alert('Erro ao fazer logout. Tente novamente.');
+            });
+        }
+      }
+
+      function showLogin() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function showRegister() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function showPasswordReset() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'block';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function hideAppContent() {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContent').style.display = 'none';
+        AppState.isInitialized = false;
+      }
+
+      function showAppContent() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContent').style.display = 'flex';
+
+        if (AppState.currentUser) {
+          const displayName = AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0];
+          const firstName = displayName.charAt(0).toUpperCase();
+
+          document.getElementById('userName').textContent = displayName;
+          document.getElementById('userEmailDisplay').textContent = AppState.currentUser.email;
+          document.getElementById('userAvatar').textContent = firstName;
+          document.getElementById('welcomeUser').textContent = displayName;
+
+          const colors = ['#fd790d', '#48f005', '#007bff', '#6f42c1', '#e83e8c'];
+          const colorIndex = AppState.currentUser.email.length % colors.length;
+          document.getElementById('userAvatar').style.background = colors[colorIndex];
+
+          aplicarPermissoesUI();
+
+          if (!AppState.isInitialized) {
+            iniciarSistema();
+          }
+
+          const initialPage = isAdmin() ? 'home' : 'qr';
+          showPage(initialPage, null);
+        }
+      }
+
+      function iniciarSistema() {
+        if (!AppState.currentUser) return;
+        if (AppState.isInitialized) return;
+
+        console.log('Iniciando sistema...');
+
+        initFirebase();
+        carregarScriptsSecundarios();
+
+        configurarDetecaoConexao();
+        carregarDadosOffline();
+        carregarChavesFirebase();
+        carregarColaboradoresFirebase();
+        carregarHistoricoFirebase();
+
+        if (!window._modalListenersAttached) {
+          window._modalListenersAttached = true;
+          document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
+          document.getElementById("btnConfirmarExclusao").addEventListener("click", confirmarExclusao);
+        }
+
+        setTimeout(() => sincronizarDadosPendentesSilencioso(), 2000);
+
+        AppState.isInitialized = true;
+        console.log('Sistema iniciado com sucesso!');
+      }
+
+      function configurarDetecaoConexao() {
+        AppState.isOnline = navigator.onLine;
+        atualizarStatusConexao();
+
+        if (AppState.connectionListenersAttached) return;
+
+        window.addEventListener('online', () => {
+          AppState.isOnline = true;
+          atualizarStatusConexao();
+          sincronizarDadosPendentesDebounced();
+        });
+
+        window.addEventListener('offline', () => {
+          AppState.isOnline = false;
+          atualizarStatusConexao();
+        });
+
+        AppState.connectionListenersAttached = true;
+      }
+
+      function sincronizarDadosPendentesDebounced() {
+        if (AppState.syncTimeout) clearTimeout(AppState.syncTimeout);
+        AppState.syncTimeout = setTimeout(() => sincronizarDadosPendentesSilencioso(), 2000);
+      }
+
+      function atualizarStatusConexao() {
+        const onlineIndicator = document.getElementById('onlineIndicator');
+        const offlineIndicator = document.getElementById('offlineIndicator');
+        const statusConexao = document.getElementById('statusConexao');
+
+        if (AppState.isOnline) {
+          if (onlineIndicator) onlineIndicator.style.display = 'block';
+          if (offlineIndicator) offlineIndicator.style.display = 'none';
+          if (statusConexao) {
+            statusConexao.textContent = 'Online';
+            statusConexao.className = 'badge bg-success';
+          }
+        } else {
+          if (onlineIndicator) onlineIndicator.style.display = 'none';
+          if (offlineIndicator) offlineIndicator.style.display = 'block';
+          if (statusConexao) {
+            statusConexao.textContent = 'Offline';
+            statusConexao.className = 'badge bg-danger';
+          }
+        }
+      }
+
+      function carregarDadosOffline() {
+        try {
+          const pendentesSalvos = localStorage.getItem('historicoPendente');
+          if (pendentesSalvos) {
+            AppState.historicoPendente = JSON.parse(pendentesSalvos);
+          }
+
+          const ultimaSync = localStorage.getItem('ultimaSincronizacao');
+          if (ultimaSync) {
+            document.getElementById('ultimaSync').textContent = new Date(ultimaSync).toLocaleString('pt-BR');
+          }
+        } catch (e) {
+          console.error('Erro ao carregar dados offline:', e);
+          AppState.historicoPendente = [];
+        }
+
+        atualizarContadoresOffline();
+      }
+
+      function salvarDadosOffline() {
+        try {
+          localStorage.setItem('historicoPendente', JSON.stringify(AppState.historicoPendente));
+        } catch (e) {
+          console.error('Erro ao salvar dados offline:', e);
+        }
+        atualizarContadoresOffline();
+      }
+
+      function atualizarContadoresOffline() {
+        const pendentes = AppState.historicoPendente.length;
+        const contadorPendentes = document.getElementById('contadorPendentes');
+        const pendentesSync = document.getElementById('pendentesSync');
+
+        if (contadorPendentes) contadorPendentes.textContent = pendentes;
+        if (pendentesSync) pendentesSync.textContent = pendentes;
+
+        atualizarListaPendentes();
+      }
+
+      function adicionarMovimentacaoOffline(chave, colaborador, acao) {
+        if (!AppState.currentUser) return null;
+
+        const movimentacao = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          chave: chave.id,
+          nomeChave: chave.nome,
+          colaborador: colaborador.nome,
+          idColaborador: colaborador.id,
+          acao: acao,
+          data: new Date().toLocaleString('pt-BR'),
+          dataTimestamp: new Date().toISOString(),
+          sincronizado: false,
+          usuarioId: AppState.currentUser.uid,
+          usuarioEmail: AppState.currentUser.email
+        };
+
+        AppState.historicoPendente.push(movimentacao);
+        salvarDadosOffline();
+
+        if (AppState.isOnline) {
+          sincronizarMovimentacao(movimentacao);
+        } else {
+          atualizarStatusChaveLocal(chave, colaborador, acao);
+        }
+
+        return movimentacao;
+      }
+
+      function atualizarStatusChaveLocal(chave, colaborador, acao) {
+        const chaveIndex = AppState.chaves.findIndex(c => c.id === chave.id);
+        if (chaveIndex !== -1) {
+          if (acao === "RETIRADA") {
+            AppState.chaves[chaveIndex].status = `Retirada por ${colaborador.nome} (Offline)`;
+          } else {
+            AppState.chaves[chaveIndex].status = "Disponível (Offline)";
+          }
+          atualizarListas();
+        }
+      }
+
+      async function sincronizarMovimentacao(movimentacao) {
+        if (!AppState.isOnline || !AppState.db || !AppState.currentUser) return false;
+
+        try {
+          const chave = AppState.chaves.find(c => c.id === movimentacao.chave);
+          if (!chave || !chave.idDoc) return false;
+
+          await AppState.db.collection("chaves").doc(chave.idDoc).update({
+            status: movimentacao.acao === "RETIRADA"
+              ? `Retirada por ${movimentacao.colaborador}`
+              : "Disponível"
+          });
+
+          await AppState.db.collection("historico").add({
+            chave: movimentacao.chave,
+            nomeChave: movimentacao.nomeChave,
+            colaborador: movimentacao.colaborador,
+            idColaborador: movimentacao.idColaborador,
+            acao: movimentacao.acao,
+            data: movimentacao.data,
+            dataTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            usuarioId: movimentacao.usuarioId,
+            usuarioEmail: movimentacao.usuarioEmail
+          });
+
+          const index = AppState.historicoPendente.findIndex(m => m.id === movimentacao.id);
+          if (index !== -1) {
+            AppState.historicoPendente.splice(index, 1);
+            salvarDadosOffline();
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Erro ao sincronizar:", error);
+          return false;
+        }
+      }
+
+      function sincronizarDadosPendentesSilencioso() {
+        if (!AppState.currentUser) return;
+        if (!AppState.isOnline) return;
+        if (AppState.historicoPendente.length === 0) return;
+
+        const syncStatusEl = document.getElementById('syncStatus');
+        if (syncStatusEl) syncStatusEl.style.display = 'block';
+
+        const totalAntes = AppState.historicoPendente.length;
+        const promises = [...AppState.historicoPendente].map(mov => sincronizarMovimentacao(mov));
+
+        Promise.all(promises)
+          .then((resultados) => {
+            const sincronizadas = resultados.filter(r => r === true).length;
+            if (sincronizadas > 0) {
+              localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
+              const ultimaSync = document.getElementById('ultimaSync');
+              if (ultimaSync) ultimaSync.textContent = new Date().toLocaleString('pt-BR');
+            }
+            console.log(`Sincronização silenciosa: ${sincronizadas}/${totalAntes}`);
+          })
+          .catch((error) => {
+            console.error('Erro na sincronização silenciosa:', error);
+          })
+          .finally(() => {
+            if (syncStatusEl) syncStatusEl.style.display = 'none';
+          });
+      }
+
+      function sincronizarDadosPendentes() {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para sincronizar dados.')) {
+          return;
+        }
+
+        if (!AppState.isOnline) {
+          alert("Você está offline.");
+          return;
+        }
+
+        if (AppState.historicoPendente.length === 0) {
+          alert("Nenhum dado pendente.");
+          return;
+        }
+
+        const syncStatusEl = document.getElementById('syncStatus');
+        if (syncStatusEl) syncStatusEl.style.display = 'block';
+
+        const totalAntes = AppState.historicoPendente.length;
+        const promises = [...AppState.historicoPendente].map(mov => sincronizarMovimentacao(mov));
+
+        Promise.all(promises)
+          .then((resultados) => {
+            const sincronizadas = resultados.filter(r => r === true).length;
+            if (syncStatusEl) syncStatusEl.style.display = 'none';
+
+            if (sincronizadas > 0) {
+              localStorage.setItem('ultimaSincronizacao', new Date().toISOString());
+              document.getElementById('ultimaSync').textContent = new Date().toLocaleString('pt-BR');
+            }
+
+            if (sincronizadas === totalAntes) {
+              alert('✅ Todos os dados foram sincronizados!');
+            } else {
+              alert(`⚠️ ${sincronizadas} de ${totalAntes} sincronizadas.`);
+            }
+          })
+          .catch((error) => {
+            console.error('Erro na sincronização:', error);
+            if (syncStatusEl) syncStatusEl.style.display = 'none';
+            alert('❌ Falha na sincronização.');
+          });
+      }
+
+      function tentarSincronizarUnico(id) {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para sincronizar dados.')) {
+          return;
+        }
+
+        const movimentacao = AppState.historicoPendente.find(m => m.id === id);
+        if (movimentacao) {
+          sincronizarMovimentacao(movimentacao).then(resultado => {
+            alert(resultado ? '✅ Sincronizado!' : '❌ Falha ao sincronizar.');
+          });
+        }
+      }
+
+      function atualizarListaPendentes() {
+        const tbody = document.getElementById('listaPendentes');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        AppState.historicoPendente.forEach(mov => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${mov.chave} - ${mov.nomeChave || ''}</td>
+              <td>${mov.colaborador}</td>
+              <td class="${mov.acao.includes('RETIRADA') ? 'text-danger' : 'text-success'}">${mov.acao}</td>
+              <td>${mov.data}</td>
+              <td>${mov.usuarioEmail || 'Desconhecido'}</td>
+              <td>
+                <button class="btn btn-sm btn-warning" onclick="tentarSincronizarUnico('${mov.id}')">
+                  <i class="fa fa-refresh"></i> Sincronizar
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      function carregarChavesFirebase() {
+        if (!AppState.db) return;
+
+        if (AppState.unsubscribes.chaves) {
+          AppState.unsubscribes.chaves();
+        }
+
+        AppState.unsubscribes.chaves = AppState.db.collection("chaves")
+          .onSnapshot((snapshot) => {
+            AppState.chaves = snapshot.docs.map(doc => ({
+              idDoc: doc.id,
+              ...doc.data()
+            }));
+
+            AppState.contadorChave = AppState.chaves.reduce((max, c) => {
+              const num = parseInt((c.id || '').split('-')[1] || '0');
+              return !isNaN(num) && num > max ? num : max;
+            }, 0);
+
+            atualizarListas();
+            atualizarEstatisticas();
+          }, (error) => {
+            console.error("Erro ao carregar chaves:", error);
+          });
+      }
+
+      function carregarColaboradoresFirebase() {
+        if (!AppState.db) return;
+
+        if (AppState.unsubscribes.colaboradores) {
+          AppState.unsubscribes.colaboradores();
+        }
+
+        AppState.unsubscribes.colaboradores = AppState.db.collection("colaboradores")
+          .onSnapshot((snapshot) => {
+            AppState.colaboradores = snapshot.docs.map(doc => ({
+              idDoc: doc.id,
+              ...doc.data()
+            }));
+
+            AppState.contadorColaborador = AppState.colaboradores.reduce((max, c) => {
+              const num = parseInt(c.id || '0');
+              return !isNaN(num) && num > max ? num : max;
+            }, 0);
+
+            const ultimoColEl = document.getElementById("ultimoColID");
+            if (ultimoColEl) {
+              ultimoColEl.innerText = AppState.contadorColaborador > 0
+                ? AppState.contadorColaborador.toString().padStart(2, "0")
+                : "Nenhum";
+            }
+
+            atualizarListas();
+            atualizarEstatisticas();
+          }, (error) => {
+            console.error("Erro ao carregar colaboradores:", error);
+          });
+      }
+
+      function carregarHistoricoFirebase() {
+        if (!AppState.db) return;
+
+        if (AppState.unsubscribes.historico) {
+          AppState.unsubscribes.historico();
+        }
+
+        AppState.unsubscribes.historico = AppState.db.collection("historico")
+          .orderBy("dataTimestamp", "desc")
+          .limit(500)
+          .onSnapshot((snapshot) => {
+            AppState.historico = snapshot.docs.map(doc => ({
+              idDoc: doc.id,
+              ...doc.data()
+            }));
+            atualizarListas();
+            atualizarEstatisticas();
+          }, (error) => {
+            console.error("Erro ao carregar historico:", error);
+          });
+      }
+
+      function salvarMovimentacao(chave, colaborador, acao) {
+        if (!AppState.currentUser) return;
+
+        if (AppState.isOnline) {
+          AppState.db.collection("historico").add({
+            chave: chave.id,
+            nomeChave: chave.nome,
+            colaborador: colaborador.nome,
+            idColaborador: colaborador.id,
+            acao: acao,
+            data: new Date().toLocaleString('pt-BR'),
+            dataTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            usuarioId: AppState.currentUser.uid,
+            usuarioEmail: AppState.currentUser.email
+          }).catch(error => {
+            console.error("Erro ao salvar histórico:", error);
+            adicionarMovimentacaoOffline(chave, colaborador, acao);
+          });
+        } else {
+          adicionarMovimentacaoOffline(chave, colaborador, acao);
+        }
+      }
+
+      function cadastrarChave() {
+        if (!requirePermission(canManageKeys, 'Somente administradores podem cadastrar chaves.')) {
+          return;
+        }
+
+        const nome = document.getElementById("nomeChave").value.trim();
+        if (!nome) return alert("Digite o nome da chave.");
+
+        const novoContador = AppState.contadorChave + 1;
+        const id = "CH-" + novoContador.toString().padStart(3, "0");
+
+        AppState.db.collection("chaves").add({
+          id,
+          nome,
+          status: "Disponível",
+          usuarioCriador: AppState.currentUser.email,
+          dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          document.getElementById("nomeChave").value = "";
+          gerarQRCode(id);
+          alert(`✅ Chave ${id} cadastrada!`);
+        })
+        .catch((error) => {
+          console.error("Erro ao cadastrar chave:", error);
+          alert("❌ Erro ao cadastrar chave.");
+        });
+      }
+
+      function cadastrarColaborador() {
+        if (!requirePermission(canManageCollaborators, 'Somente administradores podem cadastrar colaboradores.')) {
+          return;
+        }
+
+        const nome = document.getElementById("nomeColaborador").value.trim();
+        if (!nome) return alert("Digite o nome do colaborador.");
+
+        const novoContador = AppState.contadorColaborador + 1;
+        const id = novoContador.toString().padStart(2, "0");
+
+        AppState.db.collection("colaboradores").add({
+          id,
+          nome,
+          usuarioCriador: AppState.currentUser.email,
+          dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          document.getElementById("nomeColaborador").value = "";
+          alert(`✅ Colaborador ${id} - ${nome} cadastrado!`);
+        })
+        .catch((error) => {
+          console.error("Erro ao cadastrar colaborador:", error);
+          alert("❌ Erro ao cadastrar colaborador.");
+        });
+      }
+
+      function solicitarExclusaoChave(index) {
+        if (!requirePermission(canManageKeys, 'Somente administradores podem excluir chaves.')) {
+          return;
+        }
+
+        const chave = AppState.chaves[index];
+        if (!chave) return;
+
+        AppState.chaveParaExcluir = { index, idDoc: chave.idDoc, id: chave.id, nome: chave.nome };
+
+        document.getElementById("mensagemExclusao").innerHTML =
+          `Tem certeza que deseja excluir a chave <strong>${chave.id} - ${chave.nome}</strong>?`;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+        modal.show();
+      }
+
+      function solicitarExclusaoColaborador(index) {
+        if (!requirePermission(canManageCollaborators, 'Somente administradores podem excluir colaboradores.')) {
+          return;
+        }
+
+        const colab = AppState.colaboradores[index];
+        if (!colab) return;
+
+        AppState.colaboradorParaExcluir = { index, idDoc: colab.idDoc, id: colab.id, nome: colab.nome };
+
+        document.getElementById("mensagemExclusao").innerHTML =
+          `Tem certeza que deseja excluir o colaborador <strong>${colab.id} - ${colab.nome}</strong>?`;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+        modal.show();
+      }
+
+      function confirmarExclusao() {
+        if (AppState.chaveParaExcluir) {
+          if (!requirePermission(canManageKeys, 'Somente administradores podem excluir chaves.')) {
+            return;
+          }
+
+          AppState.db.collection("chaves").doc(AppState.chaveParaExcluir.idDoc).delete()
+            .then(() => {
+              alert(`✅ Chave ${AppState.chaveParaExcluir.id} excluída!`);
+              AppState.chaveParaExcluir = null;
+            })
+            .catch((error) => {
+              console.error("Erro ao excluir chave:", error);
+              alert("❌ Erro ao excluir chave.");
+            })
+            .finally(() => {
+              const modalEl = document.getElementById('modalConfirmarExclusao');
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              if (modal) modal.hide();
+            });
+        } else if (AppState.colaboradorParaExcluir) {
+          if (!requirePermission(canManageCollaborators, 'Somente administradores podem excluir colaboradores.')) {
+            return;
+          }
+
+          AppState.db.collection("colaboradores").doc(AppState.colaboradorParaExcluir.idDoc).delete()
+            .then(() => {
+              alert(`✅ Colaborador ${AppState.colaboradorParaExcluir.id} excluído!`);
+              AppState.colaboradorParaExcluir = null;
+            })
+            .catch((error) => {
+              console.error("Erro ao excluir colaborador:", error);
+              alert("❌ Erro ao excluir colaborador.");
+            })
+            .finally(() => {
+              const modalEl = document.getElementById('modalConfirmarExclusao');
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              if (modal) modal.hide();
+            });
+        }
+      }
+
+      function validarColaborador(idCol) {
+        if (!idCol) return "Digite o ID do colaborador.";
+        if (!/^\d+$/.test(idCol)) return "ID deve conter apenas números.";
+        if (AppState.colaboradores.find(c => c.id === idCol)) return null;
+        return "Colaborador não encontrado.";
+      }
+
+      function confirmarRetirada() {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar retirada.')) {
+          return;
+        }
+
+        if (!AppState.chaveSelecionada) {
+          alert("Erro: Nenhuma chave escaneada.");
+          return;
+        }
+
+        const idCol = document.getElementById("idColRetirada").value.trim();
+        const validacao = validarColaborador(idCol);
+        if (validacao) return alert(validacao);
+
+        const colab = AppState.colaboradores.find(c => c.id === idCol);
+        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
+
+        if (!chave) {
+          alert("Chave não encontrada.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (chave.status !== "Disponível" && !String(chave.status).includes("Offline")) {
+          alert(`❌ Chave já está ${chave.status}.`);
+          reiniciarScanner();
+          return;
+        }
+
+        if (AppState.isOnline) {
+          AppState.db.collection("chaves").doc(chave.idDoc).update({
+            status: "Retirada por " + colab.nome
+          })
+          .then(() => {
+            salvarMovimentacao(chave, colab, "RETIRADA");
+            alert(`✅ Chave ${chave.id} retirada por ${colab.nome}.`);
+            reiniciarScanner();
+          })
+          .catch(error => {
+            console.error("Erro ao retirar chave:", error);
+            adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+            alert(`⚠️ Retirada registrada offline!`);
+            reiniciarScanner();
+          });
+        } else {
+          adicionarMovimentacaoOffline(chave, colab, "RETIRADA");
+          alert(`⚠️ Retirada registrada offline!`);
+          reiniciarScanner();
+        }
+      }
+
+      function confirmarDevolucao() {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para registrar devolução.')) {
+          return;
+        }
+
+        if (!AppState.chaveSelecionada) {
+          alert("Erro: Nenhuma chave escaneada.");
+          return;
+        }
+
+        const idCol = document.getElementById("idColRetirada").value.trim();
+        const validacao = validarColaborador(idCol);
+        if (validacao) return alert(validacao);
+
+        const colab = AppState.colaboradores.find(c => c.id === idCol);
+        const chave = AppState.chaves.find(c => c.id === AppState.chaveSelecionada);
+
+        if (!chave) {
+          alert("Chave não encontrada.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
+          alert("Erro: Chave já está disponível.");
+          reiniciarScanner();
+          return;
+        }
+
+        if (AppState.isOnline) {
+          AppState.db.collection("chaves").doc(chave.idDoc).update({
+            status: "Disponível"
+          })
+          .then(() => {
+            salvarMovimentacao(chave, colab, "DEVOLUÇÃO");
+            alert(`✅ Chave ${chave.id} devolvida por ${colab.nome}.`);
+            reiniciarScanner();
+          })
+          .catch(error => {
+            console.error("Erro ao devolver chave:", error);
+            adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+            alert(`⚠️ Devolução registrada offline!`);
+            reiniciarScanner();
+          });
+        } else {
+          adicionarMovimentacaoOffline(chave, colab, "DEVOLUÇÃO");
+          alert(`⚠️ Devolução registrada offline!`);
+          reiniciarScanner();
+        }
+      }
+
+      function iniciarRetiradaRapida(chaveId) {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para retirar chaves.')) {
+          return;
+        }
+
+        showPage('qr', null);
+
+        const chave = AppState.chaves.find(c => c.id === chaveId);
+        if (chave) {
+          AppState.chaveSelecionada = chaveId;
+          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+          document.getElementById("areaConfirmacao").style.display = "block";
+          document.getElementById("btnConfirmarRetirada").style.display = "block";
+          document.getElementById("btnDevolverChave").style.display = "none";
+          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
+          pausarScanner();
+        }
+      }
+
+      function iniciarDevolucaoRapida(chaveId) {
+        if (!requirePermission(canOperateFlow, 'Você não tem permissão para devolver chaves.')) {
+          return;
+        }
+
+        showPage('qr', null);
+
+        const chave = AppState.chaves.find(c => c.id === chaveId);
+        if (chave) {
+          AppState.chaveSelecionada = chaveId;
+          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+          document.getElementById("areaConfirmacao").style.display = "block";
+          document.getElementById("btnConfirmarRetirada").style.display = "none";
+          document.getElementById("btnDevolverChave").style.display = "block";
+          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
+          pausarScanner();
+        }
+      }
+
+      function abrirEdicao(tipo, indexOriginal) {
+        const allowed = tipo === 'chave' ? canManageKeys : canManageCollaborators;
+
+        if (!requirePermission(allowed, 'Você não tem permissão para editar este item.')) {
+          return;
+        }
+
+        AppState.tipoEdicao = tipo;
+        AppState.itemEditando = indexOriginal;
+
+        const item = tipo === 'chave'
+          ? AppState.chaves[indexOriginal]
+          : AppState.colaboradores[indexOriginal];
+
+        if (!item) {
+          alert('Item não encontrado para edição.');
+          return;
+        }
+
+        document.getElementById("modalTitulo").innerText = `Editar ${tipo === 'chave' ? 'Chave' : 'Colaborador'} (ID: ${item.id})`;
+        document.getElementById("modalInput").value = item.nome || '';
+
+        const modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modalInstance.show();
+      }
+
+      function salvarEdicao() {
+        const allowed = AppState.tipoEdicao === 'chave' ? canManageKeys : canManageCollaborators;
+
+        if (!requirePermission(allowed, 'Você não tem permissão para salvar esta edição.')) {
+          return;
+        }
+
+        const novoNome = document.getElementById("modalInput").value.trim();
+        if (!novoNome) return alert("Digite um nome válido.");
+
+        let colecao, idDoc, tipo;
+
+        if (AppState.tipoEdicao === "chave") {
+          const chaveEditada = AppState.chaves[AppState.itemEditando];
+          if (!chaveEditada) return alert("Chave não encontrada.");
+          colecao = "chaves";
+          idDoc = chaveEditada.idDoc;
+          tipo = "Chave";
+        } else {
+          const colabEditado = AppState.colaboradores[AppState.itemEditando];
+          if (!colabEditado) return alert("Colaborador não encontrado.");
+          colecao = "colaboradores";
+          idDoc = colabEditado.idDoc;
+          tipo = "Colaborador";
+        }
+
+        AppState.db.collection(colecao).doc(idDoc).update({
+          nome: novoNome,
+          usuarioUltimaEdicao: AppState.currentUser.email,
+          dataUltimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          alert(`✅ ${tipo} atualizado para "${novoNome}".`);
+          const modalElement = document.getElementById("modalEditar");
+          const modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (modalInstance) modalInstance.hide();
+        })
+        .catch(error => {
+          console.error("Erro ao salvar edição:", error);
+          alert("❌ Erro ao salvar edição.");
+        });
+      }
+
+      function showPage(page, event) {
+        if (event) event.preventDefault();
+
+        if (!canAccessPage(page)) {
+          alert('Você não tem permissão para acessar esta aba.');
+          return;
+        }
+
+        document.querySelectorAll("section").forEach(s => s.style.display = "none");
+        const pageEl = document.getElementById(page);
+        if (pageEl) pageEl.style.display = "block";
+
+        document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
+
+        if (event) {
+          event.currentTarget.classList.add("activeMenu");
+        } else {
+          const activeLink = document.querySelector(`.sidebar a[onclick*="${page}"]`);
+          if (activeLink) activeLink.classList.add("activeMenu");
+        }
+
+        if (page === 'qr') {
+          iniciarScanner();
+        } else {
+          pararScanner();
+        }
+
+        if (page === 'colaboradores') {
+          const ultimoColEl = document.getElementById("ultimoColID");
+          if (ultimoColEl) {
+            ultimoColEl.innerText = AppState.contadorColaborador > 0
+              ? AppState.contadorColaborador.toString().padStart(2, "0")
+              : "Nenhum";
+          }
+        }
+
+        if (page === 'offline') {
+          atualizarListaPendentes();
+        }
+
+        if (page === 'qr-codes') {
+          gerarTodosQRCodes();
+        }
+
+        if (page === 'relatorios') {
+          atualizarEstatisticas();
+        }
+      }
+
+      function iniciarScanner() {
+        if (typeof Html5QrcodeScanner === 'undefined') {
+          console.warn('Html5QrcodeScanner não carregado');
+          return;
+        }
+
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
+          retomarScanner();
+          return;
+        }
+
+        pararScanner();
+
+        try {
+          AppState.html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            {
+              fps: 10,
+              qrbox: 250,
+              disableFlip: false,
+              facingMode: "environment"
+            }
+          );
+
+          AppState.html5QrcodeScanner.render(onScanSuccess, onScanError);
+          AppState.scannerAtivo = true;
+          AppState.scannerPausado = false;
+          atualizarStatusScanner();
+
+          const btnToggle = document.getElementById("btnToggleScanner");
+          if (btnToggle) btnToggle.style.display = "block";
+        } catch (error) {
+          console.error('Erro ao iniciar scanner:', error);
+        }
+      }
+
+      function pararScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo) {
+          try {
+            AppState.html5QrcodeScanner.clear();
+          } catch (error) {
+            console.warn('Erro ao parar scanner:', error);
+          }
+          AppState.html5QrcodeScanner = null;
+          AppState.scannerAtivo = false;
+          AppState.scannerPausado = false;
+          atualizarStatusScanner();
+        }
+      }
+
+      function pausarScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && !AppState.scannerPausado) {
+          try {
+            AppState.html5QrcodeScanner.pause();
+            AppState.scannerPausado = true;
+            atualizarStatusScanner();
+          } catch (error) {
+            console.warn('Erro ao pausar scanner:', error);
+          }
+        }
+      }
+
+      function retomarScanner() {
+        if (AppState.html5QrcodeScanner && AppState.scannerAtivo && AppState.scannerPausado) {
+          try {
+            AppState.html5QrcodeScanner.resume();
+            AppState.scannerPausado = false;
+            atualizarStatusScanner();
+          } catch (error) {
+            console.warn('Erro ao retomar scanner:', error);
+          }
+        }
+      }
+
+      function toggleScanner() {
+        AppState.scannerPausado ? retomarScanner() : pausarScanner();
+      }
+
+      function atualizarStatusScanner() {
+        const statusElement = document.getElementById("scannerStatus");
+        const toggleButton = document.getElementById("btnToggleScanner");
+
+        if (!statusElement || !toggleButton) return;
+
+        if (AppState.scannerAtivo) {
+          statusElement.style.display = "block";
+          if (AppState.scannerPausado) {
+            statusElement.className = "scanner-status scanner-paused";
+            statusElement.innerHTML = '<i class="fa fa-pause"></i> Scanner pausado';
+            toggleButton.innerHTML = '<i class="fa fa-play"></i> Retomar Scanner';
+          } else {
+            statusElement.className = "scanner-status scanner-active";
+            statusElement.innerHTML = '<i class="fa fa-camera"></i> Scanner ativo';
+            toggleButton.innerHTML = '<i class="fa fa-pause"></i> Pausar Scanner';
+          }
+        } else {
+          statusElement.style.display = "none";
+        }
+      }
+
+      function onScanSuccess(decodedText) {
+        pausarScanner();
+
+        const chave = AppState.chaves.find(c => c.id === decodedText);
+
+        if (!chave) {
+          document.getElementById("chaveDetectada").innerText = `ERRO: Chave '${decodedText}' não encontrada.`;
+          document.getElementById("areaConfirmacao").style.display = "none";
+          alert("QR Code não encontrado no sistema.");
+          setTimeout(retomarScanner, 2000);
+          return;
+        }
+
+        AppState.chaveSelecionada = decodedText;
+        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
+        document.getElementById("areaConfirmacao").style.display = "block";
+
+        const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
+        document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
+        document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
+        document.getElementById("idColRetirada").placeholder = isDisponivel
+          ? "ID do colaborador que vai RETIRAR"
+          : "ID do colaborador que vai DEVOLVER";
+      }
+
+      function onScanError(errorMessage) {
+        // Ignorar erros do scanner
+      }
+
+      function reiniciarScanner() {
+        document.getElementById("areaConfirmacao").style.display = "none";
+        document.getElementById("chaveDetectada").innerText = "Nenhuma";
+        document.getElementById("idColRetirada").value = "";
+        AppState.chaveSelecionada = null;
+        retomarScanner();
+      }
+
+      function gerarQRCode(texto) {
+        if (typeof QRCode === 'undefined') {
+          console.warn('QRCode não carregado');
+          return;
+        }
+
+        let area = document.getElementById("qrCodeArea");
+        area.innerHTML = "";
+
+        const qrDiv = document.createElement('div');
+        qrDiv.id = 'qrcodeCanvas';
+        area.appendChild(qrDiv);
+
+        try {
+          new QRCode(qrDiv, {
+            text: texto,
+            width: 200,
+            height: 200,
+            colorDark: "#fff",
+            colorLight: "#1e1e1e",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+
+          setTimeout(() => {
+            let canvas = qrDiv.querySelector("canvas");
+            if (canvas) {
+              let imgData = canvas.toDataURL("image/png");
+              let link = document.createElement("a");
+              link.href = imgData;
+              link.download = texto + "_QRCode.png";
+              link.innerHTML = '<i class="fa fa-download"></i> Baixar QR Code';
+              link.className = "btn btn-outline-light mt-3";
+              area.appendChild(link);
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Erro ao gerar QR Code:', error);
+        }
+      }
+
+      function gerarTodosQRCodes() {
+        if (!canManageKeys()) {
+          return;
+        }
+
+        if (typeof QRCode === 'undefined') {
+          console.warn('QRCode não carregado');
+          return;
+        }
+
+        const container = document.getElementById("qrCodesContainer");
+        container.innerHTML = "";
+
+        AppState.chaves.forEach(chave => {
+          const div = document.createElement("div");
+          div.style.margin = "20px";
+          div.style.textAlign = "center";
+          div.style.border = "1px solid #444";
+          div.style.padding = "15px";
+          div.style.borderRadius = "8px";
+          div.style.background = "#1e1e1e";
+
+          const h5 = document.createElement("h5");
+          h5.innerHTML = `${chave.id} - ${chave.nome}`;
+          div.appendChild(h5);
+
+          gerarQRCodeElement(chave.id, div);
+
+          const btnBaixar = document.createElement("button");
+          btnBaixar.innerHTML = '<i class="fa fa-download"></i> Baixar';
+          btnBaixar.className = "btn btn-sm btn-success mt-2";
+          btnBaixar.onclick = function() { baixarQRCodeIndividual(chave.id); };
+          div.appendChild(btnBaixar);
+
+          container.appendChild(div);
+        });
+      }
+
+      function gerarQRCodeElement(texto, container) {
+        const qrDiv = document.createElement('div');
+        container.appendChild(qrDiv);
+
+        try {
+          new QRCode(qrDiv, {
+            text: texto,
+            width: 150,
+            height: 150,
+            colorDark: "#fff",
+            colorLight: "#1e1e1e",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } catch (error) {
+          console.error('Erro ao gerar QR Code:', error);
+        }
+      }
+
+      function baixarQRCodeIndividual(id) {
+        if (!requirePermission(canManageKeys, 'Somente administradores podem baixar QR Codes.')) {
+          return;
+        }
+
+        if (typeof QRCode === 'undefined') {
+          console.warn('QRCode não carregado');
+          return;
+        }
+
+        const tempDiv = document.createElement("div");
+
+        try {
+          new QRCode(tempDiv, {
+            text: id,
+            width: 200,
+            height: 200,
+            colorDark: "#fff",
+            colorLight: "#1e1e1e"
+          });
+
+          setTimeout(() => {
+            const canvas = tempDiv.querySelector("canvas");
+            if (!canvas) {
+              alert("❌ Não foi possível gerar o QR Code.");
+              return;
+            }
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataURL;
+            link.download = `${id}_QRCode.png`;
+            link.click();
+          }, 120);
+        } catch (error) {
+          console.error('Erro ao baixar QR Code:', error);
+        }
+      }
+
+      function baixarTodosQRCodes() {
+        if (!requirePermission(canManageKeys, 'Somente administradores podem baixar todos os QR Codes.')) {
+          return;
+        }
+
+        if (AppState.chaves.length === 0) return alert("Nenhuma chave cadastrada.");
+        if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+          alert('Carregando bibliotecas... Tente novamente.');
+          return;
+        }
+
+        const zip = new JSZip();
+        const qrFolder = zip.folder("qrcodes_chaves");
+
+        let promises = [];
+
+        AppState.chaves.forEach(chave => {
+          const promise = new Promise((resolve) => {
+            const qrDiv = document.createElement("div");
+
+            try {
+              new QRCode(qrDiv, {
+                text: chave.id,
+                width: 200,
+                height: 200,
+                colorDark: "#fff",
+                colorLight: "#1e1e1e"
+              });
+            } catch (error) {
+              console.error('Erro ao gerar QR Code:', error);
+              resolve();
+              return;
+            }
+
+            setTimeout(() => {
+              try {
+                const canvas = qrDiv.querySelector("canvas");
+                if (!canvas) {
+                  resolve();
+                  return;
+                }
+                const dataURL = canvas.toDataURL("image/png");
+                const base64Data = dataURL.split(",")[1];
+                qrFolder.file(`${chave.id}.png`, base64Data, { base64: true });
+              } catch (error) {
+                console.error('Erro ao processar QR Code:', error);
+              }
+              resolve();
+            }, 120);
+          });
+
+          promises.push(promise);
+        });
+
+        Promise.all(promises).then(() => {
+          zip.generateAsync({ type: "blob" }).then(blob => {
+            saveAs(blob, "qrcodes_chaves.zip");
+          });
+        });
+      }
+
+      function imprimirQRCodes() {
+        if (!requirePermission(canManageKeys, 'Somente administradores podem imprimir QR Codes.')) {
+          return;
+        }
+
+        if (AppState.chaves.length === 0) {
+          alert("Nenhuma chave cadastrada.");
+          return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          alert('Não foi possível abrir a janela de impressão.');
+          return;
+        }
+
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>QR Codes - Chaves</title>
+              <style>
+                body { font-family: Arial; background: #121212; color: white; }
+                .qr-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+                .qr-item { text-align: center; margin: 20px; border: 1px solid #444; padding: 15px; border-radius: 8px; }
+              </style>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+            </head>
+            <body>
+              <h1 style="text-align: center;">QR Codes das Chaves</h1>
+              <div class="qr-container">
+        `);
+
+        AppState.chaves.forEach(chave => {
+          printWindow.document.write(`
+            <div class="qr-item">
+              <h3>${chave.id} - ${chave.nome}</h3>
+              <div id="qr-${chave.id}"></div>
+            </div>
+          `);
+        });
+
+        printWindow.document.write(`
+              </div>
+              <script>
+                window.onload = function() {
+        `);
+
+        AppState.chaves.forEach(chave => {
+          printWindow.document.write(`
+                  new QRCode(document.getElementById('qr-${chave.id}'), {
+                    text: '${chave.id}',
+                    width: 150,
+                    height: 150,
+                    colorDark: '#fff',
+                    colorLight: '#1e1e1e'
+                  });
+          `);
+        });
+
+        printWindow.document.write(`
+                  setTimeout(() => { window.print(); window.close(); }, 600);
+                }
+              <\/script>
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+      }
+
+      function filtrarChaves() {
+        if (!canManageKeys()) return;
+
+        let termo = document.getElementById("buscaChaves").value.toLowerCase();
+
+        const chavesFiltradas = AppState.chaves.filter(c =>
+          (c.nome || '').toLowerCase().includes(termo) ||
+          (c.id || '').toLowerCase().includes(termo) ||
+          (c.status || '').toLowerCase().includes(termo)
+        );
+
+        renderizarChaves(chavesFiltradas);
+      }
+
+      function atualizarListas() {
+        const totalDisponiveis = AppState.chaves.filter(c =>
+          c.status === "Disponível" || c.status === "Disponível (Offline)"
+        ).length;
+
+        const totalRetiradas = AppState.chaves.length - totalDisponiveis;
+
+        document.getElementById("totalChaves").innerText = AppState.chaves.length;
+        document.getElementById("chavesDisponiveis").innerText = totalDisponiveis;
+        document.getElementById("chavesRetiradas").innerText = totalRetiradas;
+        document.getElementById("totalCol").innerText = AppState.colaboradores.length;
+        document.getElementById("totalHist").innerText = AppState.historico.length + AppState.historicoPendente.length;
+
+        renderizarChaves(AppState.chaves);
+        renderizarColaboradores();
+        renderizarHistorico();
+      }
+
+      function renderizarChaves(chavesParaExibir) {
+        let lista = document.getElementById("listaChaves");
+        if (!lista) return;
+
+        lista.innerHTML = "";
+
+        if (!isAdmin()) {
+          lista.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center text-warning">Acesso restrito a administradores.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        chavesParaExibir.forEach((c) => {
+          const indexOriginal = AppState.chaves.findIndex(item => item.id === c.id);
+          const isOffline = c.status && c.status.includes("Offline");
+
+          const statusBadgeClass = c.status && c.status.includes("Disponível")
+            ? 'badge bg-success'
+            : 'badge bg-danger';
+
+          let acoesHtml = `<div class="btn-group" role="group">`;
+
+          if (isAdmin()) {
+            acoesHtml += `
+              <button class="btn btn-sm btn-warning" onclick="abrirEdicao('chave', ${indexOriginal})" title="Editar">
+                <i class="fa fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoChave(${indexOriginal})" title="Excluir">
+                <i class="fa fa-trash"></i>
+              </button>
+            `;
+          }
+
+          if (c.status && c.status.includes("Disponível")) {
+            acoesHtml += `
+              <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')" title="Retirar">
+                <i class="fa fa-arrow-right"></i>
+              </button>
+            `;
+          } else {
+            acoesHtml += `
+              <button class="btn btn-sm btn-primary" onclick="iniciarDevolucaoRapida('${c.id}')" title="Devolver">
+                <i class="fa fa-reply"></i>
+              </button>
+            `;
+          }
+
+          acoesHtml += `</div>`;
+
+          const offlineBadge = isOffline ? ' <span class="badge bg-warning">Offline</span>' : '';
+
+          lista.innerHTML += `
+            <tr>
+              <td>${c.id || ''}</td>
+              <td>${c.nome || ''}</td>
+              <td><span class="${statusBadgeClass}">${c.status || 'Desconhecido'}</span>${offlineBadge}</td>
+              <td>${acoesHtml}</td>
+            </tr>
+          `;
+        });
+      }
+
+      function renderizarColaboradores() {
+        let colList = document.getElementById("listaColaboradores");
+        if (!colList) return;
+
+        colList.innerHTML = "";
+
+        if (!isAdmin()) {
+          colList.innerHTML = `
+            <tr>
+              <td colspan="3" class="text-center text-warning">Acesso restrito a administradores.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        AppState.colaboradores.forEach((c, idx) => {
+          colList.innerHTML += `
+            <tr>
+              <td>${c.id || ''}</td>
+              <td>${c.nome || ''}</td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button class="btn btn-sm btn-success" onclick="abrirEdicao('colaborador', ${idx})" title="Editar">
+                    <i class="fa fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoColaborador(${idx})" title="Excluir">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      function renderizarHistorico() {
+        let hist = document.getElementById("listaHistorico");
+        if (!hist) return;
+
+        hist.innerHTML = "";
+
+        const todosRegistros = [...AppState.historico, ...AppState.historicoPendente];
+        todosRegistros.sort((a, b) => {
+          const dateA = a.dataTimestamp && typeof a.dataTimestamp.toDate === 'function'
+            ? a.dataTimestamp.toDate()
+            : new Date(a.dataTimestamp || 0);
+          const dateB = b.dataTimestamp && typeof b.dataTimestamp.toDate === 'function'
+            ? b.dataTimestamp.toDate()
+            : new Date(b.dataTimestamp || 0);
+          return dateB - dateA;
+        });
+
+        todosRegistros.slice(0, 100).forEach(h => {
+          const acaoClass = h.acao && h.acao.includes('RETIRADA') ? 'text-danger' : 'text-success';
+          const status = h.sincronizado === false
+            ? '<span class="pending-sync">Pendente</span>'
+            : '<span class="badge bg-success">Sincronizado</span>';
+          const usuario = h.usuarioEmail || 'Desconhecido';
+
+          hist.innerHTML += `
+            <tr>
+              <td>${h.chave || ''}${h.nomeChave ? ' - ' + h.nomeChave : ''}</td>
+              <td>${h.colaborador || ''}</td>
+              <td class="${acaoClass}">${h.acao || ''}</td>
+              <td>${h.data || ''}</td>
+              <td>${status}</td>
+              <td>${usuario}</td>
+            </tr>
+          `;
+        });
+      }
+
+      function atualizarEstatisticas() {
+        const totalDisponiveis = AppState.chaves.filter(c =>
+          c.status === "Disponível" || c.status === "Disponível (Offline)"
+        ).length;
+
+        const totalMovimentacoes = AppState.historico.length + AppState.historicoPendente.length;
+
+        const statChavesTotal = document.getElementById('statChavesTotal');
+        const statChavesDisponiveis = document.getElementById('statChavesDisponiveis');
+        const statColaboradoresTotal = document.getElementById('statColaboradoresTotal');
+        const statMovimentacoesTotal = document.getElementById('statMovimentacoesTotal');
+
+        if (statChavesTotal) statChavesTotal.textContent = AppState.chaves.length;
+        if (statChavesDisponiveis) statChavesDisponiveis.textContent = totalDisponiveis;
+        if (statColaboradoresTotal) statColaboradoresTotal.textContent = AppState.colaboradores.length;
+        if (statMovimentacoesTotal) statMovimentacoesTotal.textContent = totalMovimentacoes;
+      }
+
+      function downloadCSV(filename, rows) {
+        const csvContent = rows.map(row =>
+          row.map(cell => {
+            if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+              return `"${cell.replace(/"/g, '""')}"`;
+            }
+            return cell;
+          }).join(",")
+        ).join("\n");
+
+        const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      function gerarRelatorioChaves() {
+        if (!requirePermission(canViewReports, 'Somente administradores podem gerar este relatório.')) {
+          return;
+        }
+
+        const rows = [["ID", "Nome", "Status"]];
+        AppState.chaves.forEach(c => rows.push([c.id || '', c.nome || '', c.status || '']));
+        downloadCSV("relatorio_chaves.csv", rows);
+        alert("✅ Relatório de chaves gerado!");
+      }
+
+      function gerarRelatorioColaboradores() {
+        if (!requirePermission(canViewReports, 'Somente administradores podem gerar este relatório.')) {
+          return;
+        }
+
+        const rows = [["ID", "Nome"]];
+        AppState.colaboradores.forEach(c => rows.push([c.id || '', c.nome || '']));
+        downloadCSV("relatorio_colaboradores.csv", rows);
+        alert("✅ Relatório de colaboradores gerado!");
+      }
+
+      function gerarRelatorioHistorico() {
+        if (!requirePermission(canViewReports, 'Somente administradores podem gerar relatório de histórico.')) {
+          return;
+        }
+
+        const rows = [["Chave", "Colaborador", "Ação", "Data", "Usuário"]];
+        const todos = [...AppState.historico, ...AppState.historicoPendente];
+
+        todos.forEach(h => rows.push([
+          (h.chave || '') + (h.nomeChave ? ' - ' + h.nomeChave : ''),
+          h.colaborador || '',
+          h.acao || '',
+          h.data || '',
+          h.usuarioEmail || 'Desconhecido'
+        ]));
+
+        downloadCSV("relatorio_historico.csv", rows);
+        alert("✅ Relatório de histórico gerado!");
+        ativarBotaoResetHistorico();
+      }
+
+      function gerarRelatorioCompleto() {
+        if (!requirePermission(canViewReports, 'Somente administradores podem gerar relatório completo.')) {
+          return;
+        }
+
+        const agora = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        const linhas = [];
+
+        linhas.push([`Relatório Completo - ${agora}`]);
+        linhas.push([]);
+        linhas.push(["=== CHAVES ==="]);
+        linhas.push(["ID", "Nome", "Status"]);
+
+        AppState.chaves.forEach(c => linhas.push([c.id || '', c.nome || '', c.status || '']));
+
+        linhas.push([]);
+        linhas.push(["=== COLABORADORES ==="]);
+        linhas.push(["ID", "Nome"]);
+
+        AppState.colaboradores.forEach(c => linhas.push([c.id || '', c.nome || '']));
+
+        linhas.push([]);
+        linhas.push(["=== HISTÓRICO ==="]);
+        linhas.push(["Chave", "Colaborador", "Ação", "Data", "Usuário"]);
+
+        const todos = [...AppState.historico, ...AppState.historicoPendente];
+        todos.forEach(h => linhas.push([
+          (h.chave || '') + (h.nomeChave ? ' - ' + h.nomeChave : ''),
+          h.colaborador || '',
+          h.acao || '',
+          h.data || '',
+          h.usuarioEmail || 'Desconhecido'
+        ]));
+
+        downloadCSV(`relatorio_completo_${agora}.csv`, linhas);
+        alert("✅ Relatório completo gerado!");
+      }
+
+      function ativarBotaoResetHistorico() {
+        if (!isAdmin()) return;
+
+        const container = document.getElementById('resetHistoricoContainer');
+        const btnReset = document.getElementById('btnResetHistorico');
+        const timerSpan = document.getElementById('timerCountdown');
+
+        if (!container || !btnReset || !timerSpan) return;
+
+        if (AppState.resetTimerInterval) {
+          clearInterval(AppState.resetTimerInterval);
+        }
+
+        container.style.display = 'block';
+        btnReset.disabled = false;
+        btnReset.classList.add('reset-btn-enabled');
+
+        AppState.resetTimerSeconds = 60;
+        timerSpan.textContent = AppState.resetTimerSeconds;
+
+        AppState.resetTimerInterval = setInterval(() => {
+          AppState.resetTimerSeconds--;
+          timerSpan.textContent = AppState.resetTimerSeconds;
+
+          if (AppState.resetTimerSeconds <= 0) {
+            clearInterval(AppState.resetTimerInterval);
+            btnReset.disabled = true;
+            btnReset.classList.remove('reset-btn-enabled');
+            container.style.display = 'none';
+          }
+        }, 1000);
+      }
+
+      function resetarHistorico() {
+        if (!requirePermission(canResetHistory, 'Somente administradores podem limpar o histórico.')) {
+          return;
+        }
+
+        if (!AppState.isOnline) {
+          alert("Você precisa estar online.");
+          return;
+        }
+
+        if (!confirm("⚠️ ATENÇÃO! Esta ação irá APAGAR TODO O HISTÓRICO. Esta operação NÃO PODE SER DESFEITA. Deseja continuar?")) {
+          return;
+        }
+
+        if (!confirm("TEM CERTEZA ABSOLUTA? Esta ação é irreversível!")) {
+          return;
+        }
+
+        const btnReset = document.getElementById('btnResetHistorico');
+        const originalText = btnReset.innerHTML;
+        btnReset.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Limpando histórico...';
+        btnReset.disabled = true;
+
+        AppState.db.collection("historico").get()
+          .then((snapshot) => {
+            const batch = AppState.db.batch();
+            snapshot.docs.forEach(doc => {
+              batch.delete(doc.ref);
+            });
+            return batch.commit();
+          })
+          .then(() => {
+            alert("✅ Histórico limpo com sucesso!");
+            AppState.historicoPendente = [];
+            salvarDadosOffline();
+
+            const container = document.getElementById('resetHistoricoContainer');
+            if (container) container.style.display = 'none';
+
+            if (AppState.resetTimerInterval) {
+              clearInterval(AppState.resetTimerInterval);
+            }
+          })
+          .catch((error) => {
+            console.error("Erro ao limpar histórico:", error);
+            alert("❌ Erro ao limpar histórico.");
+          })
+          .finally(() => {
+            btnReset.innerHTML = originalText;
+          });
+      }
+
+      function toggleLeitor() {
+        const statusLeitor = document.getElementById('statusLeitor');
+        const btnLeitor = document.getElementById('btnToggleLeitor');
+
+        if (statusLeitor.classList.contains('bg-danger')) {
+          statusLeitor.className = 'badge bg-success';
+          statusLeitor.textContent = 'Conectado';
+          btnLeitor.innerHTML = '<i class="fa fa-plug"></i> Desconectar Leitor';
+          btnLeitor.className = 'btn btn-danger btn-sm';
+        } else {
+          statusLeitor.className = 'badge bg-danger';
+          statusLeitor.textContent = 'Desconectado';
+          btnLeitor.innerHTML = '<i class="fa fa-plug"></i> Conectar Leitor';
+          btnLeitor.className = 'btn btn-success btn-sm';
+        }
+      }
+
+      function testarLeitor() {
+        document.getElementById("idColRetirada").value = "01";
+        alert("✅ Leitor testado! ID 01 inserido.");
+      }
+
+      function toggleReconhecimentoVoz() {
+        const statusVoz = document.getElementById('statusVoz');
+        const btnVoz = document.getElementById('btnToggleVoz');
+        const voiceStatus = document.getElementById('voiceStatus');
+
+        if (statusVoz.classList.contains('bg-danger')) {
+          statusVoz.className = 'badge bg-success';
+          statusVoz.textContent = 'Ativo';
+          btnVoz.innerHTML = '<i class="fa fa-microphone-slash"></i> Desativar Voz';
+          btnVoz.className = 'btn btn-danger btn-sm';
+          voiceStatus.style.display = 'block';
+          voiceStatus.className = 'voice-status voice-active';
+          voiceStatus.innerHTML = '<i class="fa fa-microphone"></i> Assistente de voz ativo.';
+        } else {
+          statusVoz.className = 'badge bg-danger';
+          statusVoz.textContent = 'Inativo';
+          btnVoz.innerHTML = '<i class="fa fa-microphone"></i> Ativar Voz';
+          btnVoz.className = 'btn btn-success btn-sm';
+          voiceStatus.style.display = 'none';
+        }
+      }
+
+      function testarVoz() {
+        alert("🎤 Teste de voz: simulação funcionando!");
+      }
+
+      function iniciarReconhecimentoVoz() {
+        alert("🎤 Diga o ID do colaborador... (Simulação)\nID 01 inserido automaticamente.");
+        document.getElementById("idColRetirada").value = "01";
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM carregado, iniciando sistema...');
+
+        if (!window._eventListenersAttached) {
+          window._eventListenersAttached = true;
+
+          document.getElementById('loginForm').addEventListener('submit', login);
+          document.getElementById('registerForm').addEventListener('submit', register);
+          document.getElementById('resetPasswordForm').addEventListener('submit', resetPassword);
+
+          const btnReset = document.getElementById('btnResetHistorico');
+          if (btnReset) {
+            btnReset.addEventListener('click', resetarHistorico);
+          }
+        }
+
+        registrarListenerAuth();
+
+        if (initFirebase()) {
+          console.log('Firebase configurado com sucesso');
+        } else {
+          const errorElement = document.getElementById('loginError');
+          if (errorElement) {
+            errorElement.textContent = 'Erro ao carregar Firebase. Verifique sua conexão.';
+            errorElement.style.display = 'block';
+          }
+        }
+      });
+
+      window.showLogin = showLogin;
+      window.showRegister = showRegister;
+      window.showPasswordReset = showPasswordReset;
+      window.login = login;
+      window.register = register;
+      window.resetPassword = resetPassword;
+      window.logout = logout;
+      window.showPage = showPage;
+      window.cadastrarChave = cadastrarChave;
+      window.cadastrarColaborador = cadastrarColaborador;
+      window.solicitarExclusaoChave = solicitarExclusaoChave;
+      window.solicitarExclusaoColaborador = solicitarExclusaoColaborador;
+      window.abrirEdicao = abrirEdicao;
+      window.salvarEdicao = salvarEdicao;
+      window.confirmarExclusao = confirmarExclusao;
+      window.confirmarRetirada = confirmarRetirada;
+      window.confirmarDevolucao = confirmarDevolucao;
+      window.iniciarRetiradaRapida = iniciarRetiradaRapida;
+      window.iniciarDevolucaoRapida = iniciarDevolucaoRapida;
+      window.filtrarChaves = filtrarChaves;
+      window.sincronizarDadosPendentes = sincronizarDadosPendentes;
+      window.tentarSincronizarUnico = tentarSincronizarUnico;
+      window.gerarRelatorioChaves = gerarRelatorioChaves;
+      window.gerarRelatorioColaboradores = gerarRelatorioColaboradores;
+      window.gerarRelatorioHistorico = gerarRelatorioHistorico;
+      window.gerarRelatorioCompleto = gerarRelatorioCompleto;
+      window.resetarHistorico = resetarHistorico;
+      window.toggleLeitor = toggleLeitor;
+      window.testarLeitor = testarLeitor;
+      window.toggleReconhecimentoVoz = toggleReconhecimentoVoz;
+      window.testarVoz = testarVoz;
+      window.iniciarReconhecimentoVoz = iniciarReconhecimentoVoz;
+      window.toggleScanner = toggleScanner;
+      window.reiniciarScanner = reiniciarScanner;
+      window.gerarQRCode = gerarQRCode;
+      window.baixarTodosQRCodes = baixarTodosQRCodes;
+      window.imprimirQRCodes = imprimirQRCodes;
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" async></script>
+</body>
+</html>
