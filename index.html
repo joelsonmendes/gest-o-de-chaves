@@ -389,18 +389,26 @@
       border: 1px solid #444;
       border-radius: 5px;
       padding: 10px;
+      margin-top: 10px;
     }
     .item-chave-disponivel {
-      padding: 8px;
+      padding: 10px;
       margin: 5px 0;
       background: #2a2a2a;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
     }
     .item-chave-disponivel:hover {
       background: #3a3a3a;
-      border-left: 3px solid #fd790d;
+      border-left-color: #fd790d;
+    }
+    .item-chave-disponivel.retirada {
+      border-left-color: #dc3545;
+    }
+    .item-chave-disponivel.disponivel {
+      border-left-color: #28a745;
     }
   </style>
 </head>
@@ -708,7 +716,7 @@
           <h2><i class="fa fa-qrcode text-info"></i> Retirada/Devolução de Chaves</h2>
           <hr/>
 
-          <!-- Card do Leitor de Código de Barras (já existente) -->
+          <!-- Card do Leitor de Código de Barras -->
           <div class="card p-4 mt-3">
             <h4>Escanear QR Code da Chave</h4>
             <div class="card p-3 mb-3 leitor-section">
@@ -735,7 +743,7 @@
               </div>
             </div>
 
-            <!-- Assistente de Voz (já existente) -->
+            <!-- Assistente de Voz -->
             <div class="card p-3 mb-3 voice-control-section">
               <h5><i id="iconeVoz" class="fa fa-microphone text-muted"></i> Assistente de Voz</h5>
               <div class="row align-items-center">
@@ -778,45 +786,77 @@
               </button>
             </div>
 
-            <!-- NOVO CARD: Pesquisar Chave Disponível (para vigilante) -->
+            <!-- CARD DE PESQUISA DE CHAVE DISPONÍVEL -->
             <div class="card mt-3" id="pesquisaChaveCard">
               <div class="card-body">
-                <h5 class="card-title"><i class="fa fa-search"></i> Pesquisar Chave Disponível</h5>
-                <button class="btn btn-info" id="btnPesquisarChave" onclick="window.listarChavesDisponiveis()">
-                  <i class="fa fa-list"></i> Listar Chaves Disponíveis
-                </button>
-                <div id="listaChavesDisponiveis" style="display:none; margin-top:15px;">
+                <h5 class="card-title">
+                  <i class="fa fa-search"></i> Pesquisar Chave
+                </h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <button class="btn btn-info w-100" id="btnPesquisarDisponiveis" onclick="window.listarChavesDisponiveis()">
+                      <i class="fa fa-list"></i> Ver Chaves Disponíveis
+                    </button>
+                  </div>
+                  <div class="col-md-6">
+                    <button class="btn btn-warning w-100" id="btnPesquisarRetiradas" onclick="window.listarChavesRetiradas()">
+                      <i class="fa fa-list"></i> Ver Chaves em Uso
+                    </button>
+                  </div>
+                </div>
+                <div id="listaChavesContainer" style="display:none; margin-top:15px;">
                   <div class="lista-chaves-disponiveis" id="conteudoListaChaves"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Área de confirmação (já existente) -->
-            <p class="mt-3"><b>Chave detectada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
+            <!-- Área de confirmação (agora com ambos os botões visíveis) -->
+            <p class="mt-3"><b>Chave selecionada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
             <div id="areaConfirmacao" style="display: none;">
-              <div class="input-group">
-                <input id="idColRetirada" placeholder="ID do colaborador (use o leitor ou voz)" class="form-control">
-                <button class="btn btn-outline-secondary" type="button" onclick="window.testarLeitor()">
-                  <i class="fa fa-barcode"></i> Testar Leitor
-                </button>
-                <button class="btn btn-outline-info" type="button" onclick="window.iniciarReconhecimentoVoz()">
-                  <i class="fa fa-microphone"></i> Voz
+              <div class="mb-3">
+                <label for="idColRetirada" class="form-label">ID do Colaborador:</label>
+                <div class="input-group">
+                  <input id="idColRetirada" placeholder="Digite ou use o leitor" class="form-control">
+                  <button class="btn btn-outline-secondary" type="button" onclick="window.testarLeitor()">
+                    <i class="fa fa-barcode"></i>
+                  </button>
+                  <button class="btn btn-outline-info" type="button" onclick="window.iniciarReconhecimentoVoz()">
+                    <i class="fa fa-microphone"></i>
+                  </button>
+                </div>
+                <small class="text-muted d-block mt-1">
+                  Use o leitor de código de barras ou comando de voz para inserir o ID
+                </small>
+              </div>
+
+              <!-- AMBOS OS BOTÕES AGORA ESTÃO VISÍVEIS -->
+              <div class="row">
+                <div class="col-6">
+                  <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="window.confirmarRetirada()">
+                    <i class="fa fa-arrow-right"></i> Retirar
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button id="btnDevolverChave" class="btn btn-primary w-100" onclick="window.confirmarDevolucao()">
+                    <i class="fa fa-reply"></i> Devolver
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mt-2">
+                <button class="btn btn-outline-light w-100" onclick="window.reiniciarScanner()">
+                  <i class="fa fa-refresh"></i> Limpar e Escanear Novamente
                 </button>
               </div>
-              <small class="text-muted d-block mt-1">
-                Aponte o leitor para o código de barras do ID do colaborador OU use o comando de voz
+            </div>
+
+            <!-- Instruções adicionais -->
+            <div class="alert alert-info mt-3">
+              <small>
+                <i class="fa fa-info-circle"></i>
+                Para <strong>RETIRAR</strong> uma chave, selecione uma chave disponível e informe o ID do colaborador.
+                Para <strong>DEVOLVER</strong>, selecione uma chave que está em uso e informe o ID do colaborador que está devolvendo.
               </small>
-              <div class="mt-3">
-                <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="window.confirmarRetirada()">
-                  <i class="fa fa-check"></i> Confirmar Retirada
-                </button>
-                <button id="btnDevolverChave" class="btn btn-primary w-100 mt-2" onclick="window.confirmarDevolucao()">
-                  <i class="fa fa-reply"></i> Confirmar Devolução
-                </button>
-              </div>
-              <button class="btn btn-outline-light w-100 mt-2" onclick="window.reiniciarScanner()">
-                <i class="fa fa-refresh"></i> Escanear Novamente
-              </button>
             </div>
           </div>
         </section>
@@ -975,7 +1015,7 @@
 
       <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves.</p>
-        <p>Versão 4.1.0 (Perfis: Admin e Vigilante)</p>
+        <p>Versão 4.2.0 (Perfis: Admin e Vigilante - com botões Retirar/Devolver)</p>
       </footer>
     </div>
   </div>
@@ -1726,16 +1766,7 @@
           return;
         }
 
-        AppState.chaveSelecionada = decodedText;
-        document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-        document.getElementById("areaConfirmacao").style.display = "block";
-
-        const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
-        document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
-        document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
-        document.getElementById("idColRetirada").placeholder = isDisponivel
-          ? "ID do colaborador que vai RETIRAR"
-          : "ID do colaborador que vai DEVOLVER";
+        selecionarChave(chave.id);
       }
 
       function onScanError(errorMessage) {
@@ -1751,38 +1782,59 @@
       }
 
       // ==============================================
-      // NOVA FUNÇÃO: LISTAR CHAVES DISPONÍVEIS (para vigilante)
+      // FUNÇÕES DE LISTAGEM DE CHAVES (para vigilante)
       // ==============================================
       function listarChavesDisponiveis() {
-        const container = document.getElementById('listaChavesDisponiveis');
+        const container = document.getElementById('listaChavesContainer');
         const conteudo = document.getElementById('conteudoListaChaves');
         
-        if (container.style.display === 'none' || container.style.display === '') {
-          // Filtrar chaves com status "Disponível" (ignorando sufixo offline)
-          const disponiveis = AppState.chaves.filter(c => 
-            c.status === 'Disponível' || c.status === 'Disponível (Offline)'
-          );
+        // Filtrar chaves com status "Disponível"
+        const disponiveis = AppState.chaves.filter(c => 
+          c.status === 'Disponível' || c.status === 'Disponível (Offline)'
+        );
 
-          if (disponiveis.length === 0) {
-            conteudo.innerHTML = '<p class="text-muted">Nenhuma chave disponível no momento.</p>';
-          } else {
-            let html = '';
-            disponiveis.forEach(chave => {
-              html += `
-                <div class="item-chave-disponivel" onclick="window.selecionarChave('${chave.id}')">
-                  <strong>${chave.id}</strong> - ${chave.nome}
-                </div>
-              `;
-            });
-            conteudo.innerHTML = html;
-          }
-          container.style.display = 'block';
+        if (disponiveis.length === 0) {
+          conteudo.innerHTML = '<p class="text-muted">Nenhuma chave disponível no momento.</p>';
         } else {
-          container.style.display = 'none';
+          let html = '<h6 class="text-success mb-2"><i class="fa fa-check-circle"></i> Chaves Disponíveis:</h6>';
+          disponiveis.forEach(chave => {
+            html += `
+              <div class="item-chave-disponivel disponivel" onclick="window.selecionarChave('${chave.id}')">
+                <strong>${chave.id}</strong> - ${chave.nome}
+              </div>
+            `;
+          });
+          conteudo.innerHTML = html;
         }
+        container.style.display = 'block';
       }
 
-      // Função para selecionar uma chave da lista e preencher no scanner
+      function listarChavesRetiradas() {
+        const container = document.getElementById('listaChavesContainer');
+        const conteudo = document.getElementById('conteudoListaChaves');
+        
+        // Filtrar chaves que não estão disponíveis (retiradas)
+        const retiradas = AppState.chaves.filter(c => 
+          c.status !== 'Disponível' && !c.status.includes('Offline') && c.status !== 'Disponível (Offline)'
+        );
+
+        if (retiradas.length === 0) {
+          conteudo.innerHTML = '<p class="text-muted">Nenhuma chave em uso no momento.</p>';
+        } else {
+          let html = '<h6 class="text-warning mb-2"><i class="fa fa-clock"></i> Chaves em Uso:</h6>';
+          retiradas.forEach(chave => {
+            html += `
+              <div class="item-chave-disponivel retirada" onclick="window.selecionarChave('${chave.id}')">
+                <strong>${chave.id}</strong> - ${chave.nome} <br>
+                <small>${chave.status}</small>
+              </div>
+            `;
+          });
+          conteudo.innerHTML = html;
+        }
+        container.style.display = 'block';
+      }
+
       function selecionarChave(chaveId) {
         const chave = AppState.chaves.find(c => c.id === chaveId);
         if (chave) {
@@ -1791,14 +1843,12 @@
           document.getElementById("areaConfirmacao").style.display = "block";
 
           const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
-          document.getElementById("btnConfirmarRetirada").style.display = isDisponivel ? "block" : "none";
-          document.getElementById("btnDevolverChave").style.display = isDisponivel ? "none" : "block";
-          document.getElementById("idColRetirada").placeholder = isDisponivel
-            ? "ID do colaborador que vai RETIRAR"
-            : "ID do colaborador que vai DEVOLVER";
-
+          
+          // Ambos os botões ficam visíveis, mas o texto do placeholder muda
+          document.getElementById("idColRetirada").placeholder = "ID do colaborador";
+          
           // Esconder a lista após selecionar
-          document.getElementById('listaChavesDisponiveis').style.display = 'none';
+          document.getElementById('listaChavesContainer').style.display = 'none';
         }
       }
 
@@ -1818,7 +1868,7 @@
         }
 
         if (!AppState.chaveSelecionada) {
-          alert("Erro: Nenhuma chave escaneada.");
+          alert("Erro: Nenhuma chave selecionada.");
           return;
         }
 
@@ -1836,8 +1886,7 @@
         }
 
         if (chave.status !== "Disponível" && !String(chave.status).includes("Offline")) {
-          alert(`❌ Chave já está ${chave.status}.`);
-          reiniciarScanner();
+          alert(`❌ Chave não está disponível para retirada. Status atual: ${chave.status}`);
           return;
         }
 
@@ -1869,7 +1918,7 @@
         }
 
         if (!AppState.chaveSelecionada) {
-          alert("Erro: Nenhuma chave escaneada.");
+          alert("Erro: Nenhuma chave selecionada.");
           return;
         }
 
@@ -1888,7 +1937,6 @@
 
         if (chave.status === "Disponível" || chave.status === "Disponível (Offline)") {
           alert("Erro: Chave já está disponível.");
-          reiniciarScanner();
           return;
         }
 
@@ -1920,17 +1968,7 @@
         }
 
         showPage('qr');
-
-        const chave = AppState.chaves.find(c => c.id === chaveId);
-        if (chave) {
-          AppState.chaveSelecionada = chaveId;
-          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-          document.getElementById("areaConfirmacao").style.display = "block";
-          document.getElementById("btnConfirmarRetirada").style.display = "block";
-          document.getElementById("btnDevolverChave").style.display = "none";
-          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai RETIRAR";
-          pausarScanner();
-        }
+        selecionarChave(chaveId);
       }
 
       function iniciarDevolucaoRapida(chaveId) {
@@ -1939,17 +1977,7 @@
         }
 
         showPage('qr');
-
-        const chave = AppState.chaves.find(c => c.id === chaveId);
-        if (chave) {
-          AppState.chaveSelecionada = chaveId;
-          document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
-          document.getElementById("areaConfirmacao").style.display = "block";
-          document.getElementById("btnConfirmarRetirada").style.display = "none";
-          document.getElementById("btnDevolverChave").style.display = "block";
-          document.getElementById("idColRetirada").placeholder = "ID do colaborador que vai DEVOLVER";
-          pausarScanner();
-        }
+        selecionarChave(chaveId);
       }
 
       // ==============================================
@@ -3330,8 +3358,9 @@
         document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
         document.getElementById('btnConfirmarExclusao').addEventListener('click', confirmarExclusao);
 
-        // Botão de pesquisa de chave disponível
-        document.getElementById('btnPesquisarChave').addEventListener('click', listarChavesDisponiveis);
+        // Botões de pesquisa de chave
+        document.getElementById('btnPesquisarDisponiveis').addEventListener('click', listarChavesDisponiveis);
+        document.getElementById('btnPesquisarRetiradas').addEventListener('click', listarChavesRetiradas);
         document.getElementById('btnReiniciarScanner').addEventListener('click', reiniciarScanner);
       }
 
@@ -3392,6 +3421,7 @@
       window.baixarTodosQRCodes = baixarTodosQRCodes;
       window.imprimirQRCodes = imprimirQRCodes;
       window.listarChavesDisponiveis = listarChavesDisponiveis;
+      window.listarChavesRetiradas = listarChavesRetiradas;
       window.selecionarChave = selecionarChave;
     })();
   </script>
