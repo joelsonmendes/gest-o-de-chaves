@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Gestão de Chaves — SENAIHUB</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
   <style>
+    /* Estilos mantidos iguais ao original */
     body {
       background: #121212;
       color: #fff;
@@ -396,7 +397,7 @@
           <label for="loginPassword" class="form-label text-white">Senha</label>
           <input type="password" id="loginPassword" class="form-control" placeholder="Sua senha" required>
           <div class="form-text text-muted">
-            <a href="#" onclick="showPasswordReset()" class="text-info" style="font-size: 0.9em;">Esqueceu a senha?</a>
+            <a href="#" id="forgotPasswordLink" class="text-info" style="font-size: 0.9em;">Esqueceu a senha?</a>
           </div>
         </div>
         <button type="submit" class="btn btn-custom w-100 mb-3" id="btnLogin">
@@ -406,7 +407,7 @@
           <span>ou</span>
         </div>
         <div class="text-center">
-          <a href="#" onclick="showRegister()" class="text-info">Criar nova conta</a>
+          <a href="#" id="createAccountLink" class="text-info">Criar nova conta</a>
         </div>
       </form>
 
@@ -431,7 +432,7 @@
           <i class="fa fa-user-plus"></i> Criar conta
         </button>
         <div class="text-center">
-          <a href="#" onclick="showLogin()" class="text-info">Voltar para login</a>
+          <a href="#" id="backToLoginLink" class="text-info">Voltar para login</a>
         </div>
       </form>
 
@@ -447,7 +448,7 @@
           <i class="fa fa-envelope"></i> Enviar link de recuperação
         </button>
         <div class="text-center">
-          <a href="#" onclick="showLogin()" class="text-info">Voltar para login</a>
+          <a href="#" id="backToLoginFromResetLink" class="text-info">Voltar para login</a>
         </div>
       </form>
     </div>
@@ -459,28 +460,28 @@
         <img src="logo.png" alt="SENAIHUB Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMTUwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iNjAiIGZpbGw9IiNGRjc5MEQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSI+U0VOQUlIVUI8L3RleHQ+PC9zdmc+';">
       </div>
 
-      <a href="#" data-role="all" onclick="showPage('home', event)" class="activeMenu">
+      <a href="#" data-role="all" data-page="home" class="activeMenu">
         <i class="fa fa-home"></i> Home
       </a>
-      <a href="#" data-role="admin" onclick="showPage('chaves', event)">
+      <a href="#" data-role="admin" data-page="chaves">
         <i class="fa fa-key"></i> Chaves
       </a>
-      <a href="#" data-role="admin" onclick="showPage('colaboradores', event)">
+      <a href="#" data-role="admin" data-page="colaboradores">
         <i class="fa fa-users"></i> Colaboradores
       </a>
-      <a href="#" data-role="admin" onclick="showPage('qr-codes', event)">
+      <a href="#" data-role="admin" data-page="qr-codes">
         <i class="fa fa-qrcode"></i> Todos QR Codes
       </a>
-      <a href="#" data-role="all" onclick="showPage('historico', event)">
+      <a href="#" data-role="all" data-page="historico">
         <i class="fa fa-clock-rotate-left"></i> Histórico
       </a>
-      <a href="#" data-role="all" onclick="showPage('qr', event)">
+      <a href="#" data-role="all" data-page="qr">
         <i class="fa fa-camera"></i> Retirar por QR Code
       </a>
-      <a href="#" data-role="admin" onclick="showPage('relatorios', event)">
+      <a href="#" data-role="admin" data-page="relatorios">
         <i class="fa fa-chart-bar"></i> Relatórios
       </a>
-      <a href="#" data-role="admin" onclick="showPage('offline', event)">
+      <a href="#" data-role="admin" data-page="offline">
         <i class="fa fa-cloud"></i> Dados Offline
       </a>
 
@@ -493,7 +494,7 @@
             <div id="userRoleBadge" class="profile-badge">perfil</div>
           </div>
         </div>
-        <a href="#" onclick="logout()" class="text-danger" style="display: block; text-align: center;">
+        <a href="#" id="logoutBtn" class="text-danger" style="display: block; text-align: center;">
           <i class="fa fa-sign-out-alt"></i> Sair
         </a>
       </div>
@@ -549,14 +550,14 @@
           <div class="card p-4 mt-3">
             <h4>Cadastrar Chave</h4>
             <input id="nomeChave" placeholder="Nome da chave (Ex: Sala 101)" class="form-control mt-2">
-            <button class="btn btn-custom mt-2" onclick="cadastrarChave()">
+            <button class="btn btn-custom mt-2" id="btnCadastrarChave">
               <i class="fa fa-plus"></i> Cadastrar e Gerar QR Code
             </button>
             <div id="qrCodeArea" class="qr-box text-center mt-3"></div>
           </div>
           <div class="card p-3 mt-4">
             <h4>Buscar Chaves</h4>
-            <input id="buscaChaves" class="form-control" placeholder="Pesquisar por ID ou nome..." onkeyup="filtrarChaves()">
+            <input id="buscaChaves" class="form-control" placeholder="Pesquisar por ID ou nome..." onkeyup="window.filtrarChaves()">
           </div>
           <div class="card mt-3 p-3">
             <h4>Lista de Chaves</h4>
@@ -582,7 +583,7 @@
           <div class="card p-4 mt-3">
             <h4>Cadastrar Colaborador</h4>
             <input id="nomeColaborador" placeholder="Nome do colaborador" class="form-control mt-2">
-            <button class="btn btn-custom mt-3" onclick="cadastrarColaborador()">
+            <button class="btn btn-custom mt-3" id="btnCadastrarColaborador">
               <i class="fa fa-user-plus"></i> Cadastrar
             </button>
             <p class="mt-3 mb-0"><b>Último ID gerado:</b> <span id="ultimoColID" class="fw-bold">Nenhum</span></p>
@@ -611,10 +612,10 @@
             <h4>QR Codes para Impressão</h4>
             <p class="text-muted">Todos os QR codes das chaves cadastradas no sistema. Clique em "Baixar" para salvar individualmente.</p>
             <div class="mb-3">
-              <button class="btn btn-success" onclick="baixarTodosQRCodes()">
+              <button class="btn btn-success" id="btnBaixarTodosQRCodes">
                 <i class="fa fa-download"></i> Baixar Todos os QR Codes (ZIP)
               </button>
-              <button class="btn btn-info ms-2" onclick="imprimirQRCodes()">
+              <button class="btn btn-info ms-2" id="btnImprimirQRCodes">
                 <i class="fa fa-print"></i> Imprimir Todos
               </button>
             </div>
@@ -627,10 +628,10 @@
           <hr/>
           <div class="card p-3 mb-4" id="historicoActionsCard">
             <h4>Relatórios</h4>
-            <button class="btn btn-success mt-2" id="btnHistoricoCsv" onclick="gerarRelatorioHistorico()">
+            <button class="btn btn-success mt-2" id="btnHistoricoCsv" onclick="window.gerarRelatorioHistorico()">
               <i class="fa fa-download"></i> Baixar Relatório Completo (CSV)
             </button>
-            <button class="btn btn-warning mt-2 ms-2" id="btnHistoricoSync" onclick="sincronizarDadosPendentes()">
+            <button class="btn btn-warning mt-2 ms-2" id="btnHistoricoSync" onclick="window.sincronizarDadosPendentes()">
               <i class="fa fa-refresh"></i> Sincronizar Dados Pendentes
             </button>
           </div>
@@ -666,10 +667,10 @@
                   <small class="text-muted">Modo: Emulação de Teclado</small>
                 </div>
                 <div class="col-md-6 text-end">
-                  <button id="btnToggleLeitor" class="btn btn-success btn-sm" onclick="toggleLeitor()">
+                  <button id="btnToggleLeitor" class="btn btn-success btn-sm" onclick="window.toggleLeitor()">
                     <i class="fa fa-plug"></i> Conectar Leitor
                   </button>
-                  <button class="btn btn-info btn-sm ms-2" onclick="testarLeitor()">
+                  <button class="btn btn-info btn-sm ms-2" onclick="window.testarLeitor()">
                     <i class="fa fa-test"></i> Testar
                   </button>
                 </div>
@@ -690,10 +691,10 @@
                   <small class="text-muted">Reconhecimento de voz para ID do colaborador</small>
                 </div>
                 <div class="col-md-6 text-end">
-                  <button id="btnToggleVoz" class="btn btn-success btn-sm" onclick="toggleReconhecimentoVoz()">
+                  <button id="btnToggleVoz" class="btn btn-success btn-sm" onclick="window.toggleReconhecimentoVoz()">
                     <i class="fa fa-microphone"></i> Ativar Voz
                   </button>
-                  <button class="btn btn-info btn-sm ms-2" onclick="testarVoz()">
+                  <button class="btn btn-info btn-sm ms-2" onclick="window.testarVoz()">
                     <i class="fa fa-test"></i> Testar Voz
                   </button>
                 </div>
@@ -718,7 +719,7 @@
             </div>
             <div id="reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
             <div class="mt-3 text-center">
-              <button id="btnToggleScanner" class="btn btn-outline-warning btn-sm" onclick="toggleScanner()" style="display: none;">
+              <button id="btnToggleScanner" class="btn btn-outline-warning btn-sm" onclick="window.toggleScanner()" style="display: none;">
                 <i class="fa fa-pause"></i> Pausar Scanner Câmera
               </button>
             </div>
@@ -726,10 +727,10 @@
             <div id="areaConfirmacao" style="display: none;">
               <div class="input-group">
                 <input id="idColRetirada" placeholder="ID do colaborador (use o leitor ou voz)" class="form-control">
-                <button class="btn btn-outline-secondary" type="button" onclick="testarLeitor()">
+                <button class="btn btn-outline-secondary" type="button" onclick="window.testarLeitor()">
                   <i class="fa fa-barcode"></i> Testar Leitor
                 </button>
-                <button class="btn btn-outline-info" type="button" onclick="iniciarReconhecimentoVoz()">
+                <button class="btn btn-outline-info" type="button" onclick="window.iniciarReconhecimentoVoz()">
                   <i class="fa fa-microphone"></i> Voz
                 </button>
               </div>
@@ -737,14 +738,14 @@
                 Aponte o leitor para o código de barras do ID do colaborador OU use o comando de voz
               </small>
               <div class="mt-3">
-                <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="confirmarRetirada()">
+                <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="window.confirmarRetirada()">
                   <i class="fa fa-check"></i> Confirmar Retirada
                 </button>
-                <button id="btnDevolverChave" class="btn btn-primary w-100 mt-2" onclick="confirmarDevolucao()">
+                <button id="btnDevolverChave" class="btn btn-primary w-100 mt-2" onclick="window.confirmarDevolucao()">
                   <i class="fa fa-reply"></i> Confirmar Devolução
                 </button>
               </div>
-              <button class="btn btn-outline-light w-100 mt-2" onclick="reiniciarScanner()">
+              <button class="btn btn-outline-light w-100 mt-2" onclick="window.reiniciarScanner()">
                 <i class="fa fa-refresh"></i> Escanear Novamente
               </button>
             </div>
@@ -760,7 +761,7 @@
               <i class="fa fa-exclamation-triangle"></i>
               Você baixou o relatório de histórico. Recomendamos limpar o histórico para não sobrecarregar o banco de dados.
             </div>
-            <button id="btnResetHistorico" class="btn btn-danger w-100 mb-4" onclick="resetarHistorico()" disabled>
+            <button id="btnResetHistorico" class="btn btn-danger w-100 mb-4" onclick="window.resetarHistorico()" disabled>
               <i class="fa fa-trash"></i> LIMPAR HISTÓRICO COMPLETO
             </button>
             <div id="resetTimer" class="text-center mb-4" style="color: #ff9800;">
@@ -770,7 +771,7 @@
 
           <div class="row">
             <div class="col-md-6 mb-4">
-              <div class="card report-card p-4 h-100" onclick="gerarRelatorioChaves()">
+              <div class="card report-card p-4 h-100" onclick="window.gerarRelatorioChaves()">
                 <div class="text-center">
                   <i class="fa fa-key fa-3x text-info mb-3"></i>
                   <h4>Relatório de Chaves</h4>
@@ -782,7 +783,7 @@
               </div>
             </div>
             <div class="col-md-6 mb-4">
-              <div class="card report-card p-4 h-100" onclick="gerarRelatorioColaboradores()">
+              <div class="card report-card p-4 h-100" onclick="window.gerarRelatorioColaboradores()">
                 <div class="text-center">
                   <i class="fa fa-users fa-3x text-warning mb-3"></i>
                   <h4>Relatório de Colaboradores</h4>
@@ -794,7 +795,7 @@
               </div>
             </div>
             <div class="col-md-6 mb-4">
-              <div class="card report-card p-4 h-100" onclick="gerarRelatorioHistorico()">
+              <div class="card report-card p-4 h-100" onclick="window.gerarRelatorioHistorico()">
                 <div class="text-center">
                   <i class="fa fa-history fa-3x text-success mb-3"></i>
                   <h4>Relatório de Histórico</h4>
@@ -806,7 +807,7 @@
               </div>
             </div>
             <div class="col-md-6 mb-4">
-              <div class="card report-card p-4 h-100" onclick="gerarRelatorioCompleto()">
+              <div class="card report-card p-4 h-100" onclick="window.gerarRelatorioCompleto()">
                 <div class="text-center">
                   <i class="fa fa-file-alt fa-3x text-primary mb-3"></i>
                   <h4>Relatório Completo</h4>
@@ -860,7 +861,7 @@
                 <p><strong>Status da Conexão:</strong> <span id="statusConexao" class="badge bg-success">Online</span></p>
                 <p><strong>Movimentações Pendentes:</strong> <span id="contadorPendentes" class="fw-bold text-warning">0</span></p>
                 <p><strong>Última Sincronização:</strong> <span id="ultimaSync" class="fw-bold">Nunca</span></p>
-                <button class="btn btn-warning w-100 mt-3" onclick="sincronizarDadosPendentes()">
+                <button class="btn btn-warning w-100 mt-3" onclick="window.sincronizarDadosPendentes()">
                   <i class="fa fa-refresh"></i> Sincronizar Agora
                 </button>
               </div>
@@ -903,7 +904,7 @@
 
       <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves. Autor: Joelson M. Mendes</p>
-        <p>Versão 3.5.0 (RBAC Admin/Vigilante + Vercel + Firebase)</p>
+        <p>Versão 3.5.1 (RBAC Admin/Vigilante + Vercel + Firebase)</p>
       </footer>
     </div>
   </div>
@@ -950,6 +951,7 @@
     (function() {
       "use strict";
 
+      // Configuração do Firebase
       const firebaseConfig = {
         apiKey: "AIzaSyBxtaE405vs6mpuX5ufMu38s9wr3Hn0io8",
         authDomain: "gestao-chaves-app.firebaseapp.com",
@@ -959,6 +961,7 @@
         appId: "1:391255964652:web:6d27bb36bc9ff520349ec9"
       };
 
+      // Estado da aplicação
       const AppState = {
         firebaseApp: null,
         db: null,
@@ -999,6 +1002,7 @@
         authListenerRegistered: false,
         connectionListenersAttached: false,
 
+        // Métodos de utilidade
         reset() {
           this.pararTodosListeners();
           this.pararScannerCompleto();
@@ -1046,6 +1050,7 @@
         }
       };
 
+      // Funções de inicialização do Firebase
       function initFirebase() {
         if (AppState.firebaseApp) return AppState.firebaseApp;
 
@@ -1088,7 +1093,7 @@
       function carregarScriptsSecundarios() {
         const scripts = [
           { src: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', name: 'QRCode' },
-          { src: 'https://unpkg.com/html5-qrcode', name: 'Html5QrcodeScanner' },
+          { src: 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js', name: 'Html5QrcodeScanner' },
           { src: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', name: 'JSZip' },
           { src: 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js', name: 'saveAs' }
         ];
@@ -1104,12 +1109,25 @@
         });
       }
 
+      // Funções de autenticação e permissões
       async function carregarPerfilUsuario(uid) {
         try {
           const doc = await AppState.db.collection('usuarios').doc(uid).get();
 
           if (!doc.exists) {
-            AppState.userProfile = null;
+            // Criar perfil padrão se não existir
+            await AppState.db.collection('usuarios').doc(uid).set({
+              name: AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0],
+              email: AppState.currentUser.email,
+              dataCriacao: firebase.firestore.FieldValue.serverTimestamp(),
+              tipo: 'vigilante'
+            });
+            
+            AppState.userProfile = {
+              name: AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0],
+              email: AppState.currentUser.email,
+              tipo: 'vigilante'
+            };
             AppState.userRole = 'vigilante';
             return;
           }
@@ -1119,7 +1137,7 @@
           AppState.userRole = data.tipo || 'vigilante';
         } catch (error) {
           console.error('Erro ao carregar perfil do usuário:', error);
-          AppState.userProfile = null;
+          AppState.userProfile = { name: AppState.currentUser.displayName || 'Usuário', email: AppState.currentUser.email };
           AppState.userRole = 'vigilante';
         }
       }
@@ -1242,6 +1260,63 @@
         AppState.authListenerRegistered = true;
       }
 
+      // Funções de UI
+      function showLogin() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function showRegister() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+        document.getElementById('resetPasswordForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function showPasswordReset() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'block';
+        document.getElementById('loginError').style.display = 'none';
+      }
+
+      function hideAppContent() {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContent').style.display = 'none';
+        AppState.isInitialized = false;
+      }
+
+      function showAppContent() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContent').style.display = 'flex';
+
+        if (AppState.currentUser) {
+          const displayName = AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0];
+          const firstName = displayName.charAt(0).toUpperCase();
+
+          document.getElementById('userName').textContent = displayName;
+          document.getElementById('userEmailDisplay').textContent = AppState.currentUser.email;
+          document.getElementById('userAvatar').textContent = firstName;
+          document.getElementById('welcomeUser').textContent = displayName;
+
+          const colors = ['#fd790d', '#48f005', '#007bff', '#6f42c1', '#e83e8c'];
+          const colorIndex = AppState.currentUser.email.length % colors.length;
+          document.getElementById('userAvatar').style.background = colors[colorIndex];
+
+          aplicarPermissoesUI();
+
+          if (!AppState.isInitialized) {
+            iniciarSistema();
+          }
+
+          const initialPage = isAdmin() ? 'home' : 'qr';
+          showPage(initialPage);
+        }
+      }
+
+      // Funções de autenticação
       function login(event) {
         event.preventDefault();
         const email = document.getElementById('loginEmail').value;
@@ -1405,61 +1480,7 @@
         }
       }
 
-      function showLogin() {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('resetPasswordForm').style.display = 'none';
-        document.getElementById('loginError').style.display = 'none';
-      }
-
-      function showRegister() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'block';
-        document.getElementById('resetPasswordForm').style.display = 'none';
-        document.getElementById('loginError').style.display = 'none';
-      }
-
-      function showPasswordReset() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('resetPasswordForm').style.display = 'block';
-        document.getElementById('loginError').style.display = 'none';
-      }
-
-      function hideAppContent() {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('appContent').style.display = 'none';
-        AppState.isInitialized = false;
-      }
-
-      function showAppContent() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appContent').style.display = 'flex';
-
-        if (AppState.currentUser) {
-          const displayName = AppState.currentUser.displayName || AppState.currentUser.email.split('@')[0];
-          const firstName = displayName.charAt(0).toUpperCase();
-
-          document.getElementById('userName').textContent = displayName;
-          document.getElementById('userEmailDisplay').textContent = AppState.currentUser.email;
-          document.getElementById('userAvatar').textContent = firstName;
-          document.getElementById('welcomeUser').textContent = displayName;
-
-          const colors = ['#fd790d', '#48f005', '#007bff', '#6f42c1', '#e83e8c'];
-          const colorIndex = AppState.currentUser.email.length % colors.length;
-          document.getElementById('userAvatar').style.background = colors[colorIndex];
-
-          aplicarPermissoesUI();
-
-          if (!AppState.isInitialized) {
-            iniciarSistema();
-          }
-
-          const initialPage = isAdmin() ? 'home' : 'qr';
-          showPage(initialPage, null);
-        }
-      }
-
+      // Funções de inicialização do sistema
       function iniciarSistema() {
         if (!AppState.currentUser) return;
         if (AppState.isInitialized) return;
@@ -1474,12 +1495,6 @@
         carregarChavesFirebase();
         carregarColaboradoresFirebase();
         carregarHistoricoFirebase();
-
-        if (!window._modalListenersAttached) {
-          window._modalListenersAttached = true;
-          document.getElementById("btnSalvarEdicao").addEventListener("click", salvarEdicao);
-          document.getElementById("btnConfirmarExclusao").addEventListener("click", confirmarExclusao);
-        }
 
         setTimeout(() => sincronizarDadosPendentesSilencioso(), 2000);
 
@@ -1753,7 +1768,7 @@
               <td>${mov.data}</td>
               <td>${mov.usuarioEmail || 'Desconhecido'}</td>
               <td>
-                <button class="btn btn-sm btn-warning" onclick="tentarSincronizarUnico('${mov.id}')">
+                <button class="btn btn-sm btn-warning" onclick="window.tentarSincronizarUnico('${mov.id}')">
                   <i class="fa fa-refresh"></i> Sincronizar
                 </button>
               </td>
@@ -1777,8 +1792,9 @@
             }));
 
             AppState.contadorChave = AppState.chaves.reduce((max, c) => {
-              const num = parseInt((c.id || '').split('-')[1] || '0');
-              return !isNaN(num) && num > max ? num : max;
+              const match = (c.id || '').match(/CH-(\d+)/);
+              const num = match ? parseInt(match[1]) : 0;
+              return num > max ? num : max;
             }, 0);
 
             atualizarListas();
@@ -2112,7 +2128,7 @@
           return;
         }
 
-        showPage('qr', null);
+        showPage('qr');
 
         const chave = AppState.chaves.find(c => c.id === chaveId);
         if (chave) {
@@ -2131,7 +2147,7 @@
           return;
         }
 
-        showPage('qr', null);
+        showPage('qr');
 
         const chave = AppState.chaves.find(c => c.id === chaveId);
         if (chave) {
@@ -2214,9 +2230,7 @@
         });
       }
 
-      function showPage(page, event) {
-        if (event) event.preventDefault();
-
+      function showPage(page) {
         if (!canAccessPage(page)) {
           alert('Você não tem permissão para acessar esta aba.');
           return;
@@ -2228,12 +2242,8 @@
 
         document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("activeMenu"));
 
-        if (event) {
-          event.currentTarget.classList.add("activeMenu");
-        } else {
-          const activeLink = document.querySelector(`.sidebar a[onclick*="${page}"]`);
-          if (activeLink) activeLink.classList.add("activeMenu");
-        }
+        const activeLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
+        if (activeLink) activeLink.classList.add("activeMenu");
 
         if (page === 'qr') {
           iniciarScanner();
@@ -2284,7 +2294,8 @@
               qrbox: 250,
               disableFlip: false,
               facingMode: "environment"
-            }
+            },
+            false
           );
 
           AppState.html5QrcodeScanner.render(onScanSuccess, onScanError);
@@ -2441,7 +2452,7 @@
       }
 
       function gerarTodosQRCodes() {
-        if (!canManageKeys()) {
+        if (!isAdmin()) {
           return;
         }
 
@@ -2466,7 +2477,21 @@
           h5.innerHTML = `${chave.id} - ${chave.nome}`;
           div.appendChild(h5);
 
-          gerarQRCodeElement(chave.id, div);
+          const qrDiv = document.createElement('div');
+          div.appendChild(qrDiv);
+
+          try {
+            new QRCode(qrDiv, {
+              text: chave.id,
+              width: 150,
+              height: 150,
+              colorDark: "#fff",
+              colorLight: "#1e1e1e",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+          } catch (error) {
+            console.error('Erro ao gerar QR Code:', error);
+          }
 
           const btnBaixar = document.createElement("button");
           btnBaixar.innerHTML = '<i class="fa fa-download"></i> Baixar';
@@ -2476,24 +2501,6 @@
 
           container.appendChild(div);
         });
-      }
-
-      function gerarQRCodeElement(texto, container) {
-        const qrDiv = document.createElement('div');
-        container.appendChild(qrDiv);
-
-        try {
-          new QRCode(qrDiv, {
-            text: texto,
-            width: 150,
-            height: 150,
-            colorDark: "#fff",
-            colorLight: "#1e1e1e",
-            correctLevel: QRCode.CorrectLevel.H
-          });
-        } catch (error) {
-          console.error('Erro ao gerar QR Code:', error);
-        }
       }
 
       function baixarQRCodeIndividual(id) {
@@ -2631,7 +2638,7 @@
           printWindow.document.write(`
             <div class="qr-item">
               <h3>${chave.id} - ${chave.nome}</h3>
-              <div id="qr-${chave.id}"></div>
+              <div id="qr-${chave.id.replace(/[^a-zA-Z0-9]/g, '_')}"></div>
             </div>
           `);
         });
@@ -2643,8 +2650,9 @@
         `);
 
         AppState.chaves.forEach(chave => {
+          const safeId = chave.id.replace(/[^a-zA-Z0-9]/g, '_');
           printWindow.document.write(`
-                  new QRCode(document.getElementById('qr-${chave.id}'), {
+                  new QRCode(document.getElementById('qr-${safeId}'), {
                     text: '${chave.id}',
                     width: 150,
                     height: 150,
@@ -2666,7 +2674,7 @@
       }
 
       function filtrarChaves() {
-        if (!canManageKeys()) return;
+        if (!isAdmin()) return;
 
         let termo = document.getElementById("buscaChaves").value.toLowerCase();
 
@@ -2724,10 +2732,10 @@
 
           if (isAdmin()) {
             acoesHtml += `
-              <button class="btn btn-sm btn-warning" onclick="abrirEdicao('chave', ${indexOriginal})" title="Editar">
+              <button class="btn btn-sm btn-warning" onclick="window.abrirEdicao('chave', ${indexOriginal})" title="Editar">
                 <i class="fa fa-edit"></i>
               </button>
-              <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoChave(${indexOriginal})" title="Excluir">
+              <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoChave(${indexOriginal})" title="Excluir">
                 <i class="fa fa-trash"></i>
               </button>
             `;
@@ -2735,13 +2743,13 @@
 
           if (c.status && c.status.includes("Disponível")) {
             acoesHtml += `
-              <button class="btn btn-sm btn-info" onclick="iniciarRetiradaRapida('${c.id}')" title="Retirar">
+              <button class="btn btn-sm btn-info" onclick="window.iniciarRetiradaRapida('${c.id}')" title="Retirar">
                 <i class="fa fa-arrow-right"></i>
               </button>
             `;
           } else {
             acoesHtml += `
-              <button class="btn btn-sm btn-primary" onclick="iniciarDevolucaoRapida('${c.id}')" title="Devolver">
+              <button class="btn btn-sm btn-primary" onclick="window.iniciarDevolucaoRapida('${c.id}')" title="Devolver">
                 <i class="fa fa-reply"></i>
               </button>
             `;
@@ -2784,10 +2792,10 @@
               <td>${c.nome || ''}</td>
               <td>
                 <div class="btn-group" role="group">
-                  <button class="btn btn-sm btn-success" onclick="abrirEdicao('colaborador', ${idx})" title="Editar">
+                  <button class="btn btn-sm btn-success" onclick="window.abrirEdicao('colaborador', ${idx})" title="Editar">
                     <i class="fa fa-edit"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" onclick="solicitarExclusaoColaborador(${idx})" title="Excluir">
+                  <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoColaborador(${idx})" title="Excluir">
                     <i class="fa fa-trash"></i>
                   </button>
                 </div>
@@ -3092,22 +3100,65 @@
         document.getElementById("idColRetirada").value = "01";
       }
 
+      // Inicialização dos event listeners
+      function initEventListeners() {
+        // Login form
+        document.getElementById('loginForm').addEventListener('submit', login);
+        document.getElementById('registerForm').addEventListener('submit', register);
+        document.getElementById('resetPasswordForm').addEventListener('submit', resetPassword);
+
+        // Links de navegação
+        document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+          e.preventDefault();
+          showPasswordReset();
+        });
+
+        document.getElementById('createAccountLink').addEventListener('click', (e) => {
+          e.preventDefault();
+          showRegister();
+        });
+
+        document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+          e.preventDefault();
+          showLogin();
+        });
+
+        document.getElementById('backToLoginFromResetLink').addEventListener('click', (e) => {
+          e.preventDefault();
+          showLogin();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+
+        // Menu lateral
+        document.querySelectorAll('.sidebar a[data-page]').forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = link.getAttribute('data-page');
+            showPage(page);
+          });
+        });
+
+        // Botões principais
+        document.getElementById('btnCadastrarChave').addEventListener('click', cadastrarChave);
+        document.getElementById('btnCadastrarColaborador').addEventListener('click', cadastrarColaborador);
+        document.getElementById('btnBaixarTodosQRCodes').addEventListener('click', baixarTodosQRCodes);
+        document.getElementById('btnImprimirQRCodes').addEventListener('click', imprimirQRCodes);
+
+        // Modais
+        document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
+        document.getElementById('btnConfirmarExclusao').addEventListener('click', confirmarExclusao);
+      }
+
+      // Inicialização quando o DOM estiver pronto
       document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM carregado, iniciando sistema...');
 
-        if (!window._eventListenersAttached) {
-          window._eventListenersAttached = true;
-
-          document.getElementById('loginForm').addEventListener('submit', login);
-          document.getElementById('registerForm').addEventListener('submit', register);
-          document.getElementById('resetPasswordForm').addEventListener('submit', resetPassword);
-
-          const btnReset = document.getElementById('btnResetHistorico');
-          if (btnReset) {
-            btnReset.addEventListener('click', resetarHistorico);
-          }
-        }
-
+        initEventListeners();
         registrarListenerAuth();
 
         if (initFirebase()) {
@@ -3121,12 +3172,10 @@
         }
       });
 
+      // Expor funções globalmente
       window.showLogin = showLogin;
       window.showRegister = showRegister;
       window.showPasswordReset = showPasswordReset;
-      window.login = login;
-      window.register = register;
-      window.resetPassword = resetPassword;
       window.logout = logout;
       window.showPage = showPage;
       window.cadastrarChave = cadastrarChave;
@@ -3134,7 +3183,6 @@
       window.solicitarExclusaoChave = solicitarExclusaoChave;
       window.solicitarExclusaoColaborador = solicitarExclusaoColaborador;
       window.abrirEdicao = abrirEdicao;
-      window.salvarEdicao = salvarEdicao;
       window.confirmarExclusao = confirmarExclusao;
       window.confirmarRetirada = confirmarRetirada;
       window.confirmarDevolucao = confirmarDevolucao;
@@ -3161,6 +3209,6 @@
     })();
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
