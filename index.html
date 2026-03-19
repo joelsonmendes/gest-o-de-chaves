@@ -786,31 +786,60 @@
               </button>
             </div>
 
-            <!-- CARD DE PESQUISA DE CHAVE DISPONÍVEL -->
+            <!-- CARD DE PESQUISA DE CHAVE (OTIMIZADO) -->
             <div class="card mt-3" id="pesquisaChaveCard">
               <div class="card-body">
                 <h5 class="card-title">
                   <i class="fa fa-search"></i> Pesquisar Chave
                 </h5>
-                <div class="row">
+                
+                <!-- Campo para digitar APENAS O NÚMERO da chave -->
+                <div class="mb-3">
+                  <label for="numeroChave" class="form-label">Digite o número da chave:</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-dark text-white border-secondary">CH-</span>
+                    <input type="number" id="numeroChave" class="form-control" placeholder="001" min="1" value="">
+                    <button class="btn btn-primary" type="button" onclick="window.buscarChavePorNumero()">
+                      <i class="fa fa-search"></i> Buscar
+                    </button>
+                  </div>
+                  <small class="text-muted d-block mt-1">
+                    Digite apenas o número (ex: 1 para CH-001, 12 para CH-012)
+                  </small>
+                </div>
+
+                <!-- Separador -->
+                <div class="text-center mb-3">
+                  <span class="badge bg-secondary">OU</span>
+                </div>
+
+                <!-- Botões de listagem -->
+                <div class="row mb-3">
                   <div class="col-md-6">
                     <button class="btn btn-info w-100" id="btnPesquisarDisponiveis" onclick="window.listarChavesDisponiveis()">
-                      <i class="fa fa-list"></i> Ver Chaves Disponíveis
+                      <i class="fa fa-list"></i> Ver Disponíveis
                     </button>
                   </div>
                   <div class="col-md-6">
                     <button class="btn btn-warning w-100" id="btnPesquisarRetiradas" onclick="window.listarChavesRetiradas()">
-                      <i class="fa fa-list"></i> Ver Chaves em Uso
+                      <i class="fa fa-list"></i> Ver em Uso
                     </button>
                   </div>
                 </div>
+
+                <!-- Container para lista de resultados -->
                 <div id="listaChavesContainer" style="display:none; margin-top:15px;">
                   <div class="lista-chaves-disponiveis" id="conteudoListaChaves"></div>
+                </div>
+
+                <!-- Mensagem de erro -->
+                <div id="erroChaveNaoEncontrada" class="alert alert-danger mt-3" style="display: none;">
+                  <i class="fa fa-exclamation-triangle"></i> Chave não encontrada!
                 </div>
               </div>
             </div>
 
-            <!-- Área de confirmação (agora com ambos os botões visíveis) -->
+            <!-- Área de confirmação -->
             <p class="mt-3"><b>Chave selecionada:</b> <span id="chaveDetectada" class="fw-bold text-info">Nenhuma</span></p>
             <div id="areaConfirmacao" style="display: none;">
               <div class="mb-3">
@@ -829,7 +858,7 @@
                 </small>
               </div>
 
-              <!-- AMBOS OS BOTÕES AGORA ESTÃO VISÍVEIS -->
+              <!-- Botões de Retirada e Devolução -->
               <div class="row">
                 <div class="col-6">
                   <button id="btnConfirmarRetirada" class="btn btn-success w-100" onclick="window.confirmarRetirada()">
@@ -854,7 +883,7 @@
             <div class="alert alert-info mt-3">
               <small>
                 <i class="fa fa-info-circle"></i>
-                Para <strong>RETIRAR</strong> uma chave, selecione uma chave disponível e informe o ID do colaborador.
+                Para <strong>RETIRAR</strong> uma chave, selecione uma chave disponível e informe o ID do colaborador.<br>
                 Para <strong>DEVOLVER</strong>, selecione uma chave que está em uso e informe o ID do colaborador que está devolvendo.
               </small>
             </div>
@@ -1015,7 +1044,7 @@
 
       <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves.</p>
-        <p>Versão 4.2.0 (Perfis: Admin e Vigilante - com botões Retirar/Devolver)</p>
+        <p>Versão 4.4.0 (Busca otimizada: digite apenas o número da chave)</p>
       </footer>
     </div>
   </div>
@@ -1777,12 +1806,47 @@
         document.getElementById("areaConfirmacao").style.display = "none";
         document.getElementById("chaveDetectada").innerText = "Nenhuma";
         document.getElementById("idColRetirada").value = "";
+        document.getElementById("numeroChave").value = "";
+        document.getElementById("erroChaveNaoEncontrada").style.display = "none";
         AppState.chaveSelecionada = null;
         retomarScanner();
       }
 
       // ==============================================
-      // FUNÇÕES DE LISTAGEM DE CHAVES (para vigilante)
+      // NOVA FUNÇÃO: BUSCAR CHAVE POR NÚMERO (OTIMIZADA)
+      // ==============================================
+      function buscarChavePorNumero() {
+        const numero = document.getElementById("numeroChave").value.trim();
+        const erroElement = document.getElementById("erroChaveNaoEncontrada");
+        
+        if (!numero) {
+          alert("Digite o número da chave.");
+          return;
+        }
+
+        // Formatar o número para o padrão CH-XXX
+        const numeroFormatado = numero.padStart(3, '0');
+        const idCompleto = `CH-${numeroFormatado}`;
+
+        const chave = AppState.chaves.find(c => c.id === idCompleto);
+
+        if (!chave) {
+          erroElement.style.display = "block";
+          setTimeout(() => {
+            erroElement.style.display = "none";
+          }, 3000);
+          return;
+        }
+
+        // Esconder erro se estava visível
+        erroElement.style.display = "none";
+        
+        // Selecionar a chave encontrada
+        selecionarChave(chave.id);
+      }
+
+      // ==============================================
+      // FUNÇÕES DE LISTAGEM DE CHAVES
       // ==============================================
       function listarChavesDisponiveis() {
         const container = document.getElementById('listaChavesContainer');
@@ -1841,10 +1905,12 @@
           AppState.chaveSelecionada = chaveId;
           document.getElementById("chaveDetectada").innerText = `${chave.id} - ${chave.nome} (${chave.status})`;
           document.getElementById("areaConfirmacao").style.display = "block";
-
-          const isDisponivel = chave.status === "Disponível" || chave.status === "Disponível (Offline)";
           
-          // Ambos os botões ficam visíveis, mas o texto do placeholder muda
+          // Extrair o número do ID para preencher o campo de busca
+          const numero = chave.id.replace('CH-', '');
+          document.getElementById("numeroChave").value = parseInt(numero); // Remove zeros à esquerda
+          
+          // Ambos os botões ficam visíveis
           document.getElementById("idColRetirada").placeholder = "ID do colaborador";
           
           // Esconder a lista após selecionar
@@ -3362,6 +3428,14 @@
         document.getElementById('btnPesquisarDisponiveis').addEventListener('click', listarChavesDisponiveis);
         document.getElementById('btnPesquisarRetiradas').addEventListener('click', listarChavesRetiradas);
         document.getElementById('btnReiniciarScanner').addEventListener('click', reiniciarScanner);
+        
+        // Input de busca por número (pressionar Enter)
+        document.getElementById('numeroChave').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            buscarChavePorNumero();
+          }
+        });
       }
 
       // ==============================================
@@ -3423,6 +3497,7 @@
       window.listarChavesDisponiveis = listarChavesDisponiveis;
       window.listarChavesRetiradas = listarChavesRetiradas;
       window.selecionarChave = selecionarChave;
+      window.buscarChavePorNumero = buscarChavePorNumero; // Função otimizada
     })();
   </script>
 
