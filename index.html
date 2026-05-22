@@ -1044,7 +1044,7 @@
 
       <footer class="footer">
         <p>&copy; 2025 SENAIHUB. Todos os direitos reservados. Desenvolvido para Gestão de Chaves.</p>
-        <p>Versão 4.4.0 (Busca otimizada: digite apenas o número da chave)</p>
+        <p>Versão 4.5.0 (Busca otimizada e edição corrigida)</p>
       </footer>
     </div>
   </div>
@@ -2492,17 +2492,17 @@
       }
 
       // ==============================================
-      // FUNÇÕES DE EXCLUSÃO (APENAS ADMIN)
+      // FUNÇÕES DE EXCLUSÃO (APENAS ADMIN) - CORRIGIDAS
       // ==============================================
-      function solicitarExclusaoChave(index) {
+      function solicitarExclusaoChave(id) {
         if (!requirePermission(canManageKeys, 'Somente administradores podem excluir chaves.')) {
           return;
         }
 
-        const chave = AppState.chaves[index];
+        const chave = AppState.chaves.find(c => c.id === id);
         if (!chave) return;
 
-        AppState.chaveParaExcluir = { index, idDoc: chave.idDoc, id: chave.id, nome: chave.nome };
+        AppState.chaveParaExcluir = { idDoc: chave.idDoc, id: chave.id, nome: chave.nome };
 
         document.getElementById("mensagemExclusao").innerHTML =
           `Tem certeza que deseja excluir a chave <strong>${chave.id} - ${chave.nome}</strong>?`;
@@ -2511,15 +2511,15 @@
         modal.show();
       }
 
-      function solicitarExclusaoColaborador(index) {
+      function solicitarExclusaoColaborador(id) {
         if (!requirePermission(canManageCollaborators, 'Somente administradores podem excluir colaboradores.')) {
           return;
         }
 
-        const colab = AppState.colaboradores[index];
+        const colab = AppState.colaboradores.find(c => c.id === id);
         if (!colab) return;
 
-        AppState.colaboradorParaExcluir = { index, idDoc: colab.idDoc, id: colab.id, nome: colab.nome };
+        AppState.colaboradorParaExcluir = { idDoc: colab.idDoc, id: colab.id, nome: colab.nome };
 
         document.getElementById("mensagemExclusao").innerHTML =
           `Tem certeza que deseja excluir o colaborador <strong>${colab.id} - ${colab.nome}</strong>?`;
@@ -2571,9 +2571,9 @@
       }
 
       // ==============================================
-      // FUNÇÕES DE EDIÇÃO (APENAS ADMIN)
+      // FUNÇÕES DE EDIÇÃO (APENAS ADMIN) - CORRIGIDAS
       // ==============================================
-      function abrirEdicao(tipo, indexOriginal) {
+      function abrirEdicao(tipo, id) {
         const allowed = tipo === 'chave' ? canManageKeys : canManageCollaborators;
 
         if (!requirePermission(allowed, 'Você não tem permissão para editar este item.')) {
@@ -2581,11 +2581,15 @@
         }
 
         AppState.tipoEdicao = tipo;
-        AppState.itemEditando = indexOriginal;
-
-        const item = tipo === 'chave'
-          ? AppState.chaves[indexOriginal]
-          : AppState.colaboradores[indexOriginal];
+        
+        let item;
+        if (tipo === 'chave') {
+          item = AppState.chaves.find(c => c.id === id);
+          AppState.itemEditando = item?.idDoc;
+        } else {
+          item = AppState.colaboradores.find(c => c.id === id);
+          AppState.itemEditando = item?.idDoc;
+        }
 
         if (!item) {
           alert('Item não encontrado para edição.');
@@ -2609,23 +2613,21 @@
         const novoNome = document.getElementById("modalInput").value.trim();
         if (!novoNome) return alert("Digite um nome válido.");
 
-        let colecao, idDoc, tipo;
+        let colecao, tipo;
 
         if (AppState.tipoEdicao === "chave") {
-          const chaveEditada = AppState.chaves[AppState.itemEditando];
+          const chaveEditada = AppState.chaves.find(c => c.idDoc === AppState.itemEditando);
           if (!chaveEditada) return alert("Chave não encontrada.");
           colecao = "chaves";
-          idDoc = chaveEditada.idDoc;
           tipo = "Chave";
         } else {
-          const colabEditado = AppState.colaboradores[AppState.itemEditando];
+          const colabEditado = AppState.colaboradores.find(c => c.idDoc === AppState.itemEditando);
           if (!colabEditado) return alert("Colaborador não encontrado.");
           colecao = "colaboradores";
-          idDoc = colabEditado.idDoc;
           tipo = "Colaborador";
         }
 
-        AppState.db.collection(colecao).doc(idDoc).update({
+        AppState.db.collection(colecao).doc(AppState.itemEditando).update({
           nome: novoNome,
           usuarioUltimaEdicao: AppState.currentUser.email,
           dataUltimaEdicao: firebase.firestore.FieldValue.serverTimestamp()
@@ -2635,10 +2637,13 @@
           const modalElement = document.getElementById("modalEditar");
           const modalInstance = bootstrap.Modal.getInstance(modalElement);
           if (modalInstance) modalInstance.hide();
+          
+          AppState.tipoEdicao = null;
+          AppState.itemEditando = null;
         })
         .catch(error => {
           console.error("Erro ao salvar edição:", error);
-          alert("❌ Erro ao salvar edição.");
+          alert("❌ Erro ao salvar edição. Verifique sua conexão e tente novamente.");
         });
       }
 
@@ -2679,7 +2684,6 @@
         }
 
         chavesParaExibir.forEach((c) => {
-          const indexOriginal = AppState.chaves.findIndex(item => item.id === c.id);
           const isOffline = c.status && c.status.includes("Offline");
 
           const statusBadgeClass = c.status && c.status.includes("Disponível")
@@ -2690,10 +2694,10 @@
 
           if (isAdmin()) {
             acoesHtml += `
-              <button class="btn btn-sm btn-warning" onclick="window.abrirEdicao('chave', ${indexOriginal})" title="Editar">
+              <button class="btn btn-sm btn-warning" onclick="window.abrirEdicao('chave', '${c.id}')" title="Editar">
                 <i class="fa fa-edit"></i>
               </button>
-              <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoChave(${indexOriginal})" title="Excluir">
+              <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoChave('${c.id}')" title="Excluir">
                 <i class="fa fa-trash"></i>
               </button>
             `;
@@ -2743,17 +2747,17 @@
           return;
         }
 
-        AppState.colaboradores.forEach((c, idx) => {
+        AppState.colaboradores.forEach((c) => {
           colList.innerHTML += `
             <tr>
               <td>${c.id || ''}</td>
               <td>${c.nome || ''}</td>
               <td>
                 <div class="btn-group" role="group">
-                  <button class="btn btn-sm btn-success" onclick="window.abrirEdicao('colaborador', ${idx})" title="Editar">
+                  <button class="btn btn-sm btn-success" onclick="window.abrirEdicao('colaborador', '${c.id}')" title="Editar">
                     <i class="fa fa-edit"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoColaborador(${idx})" title="Excluir">
+                  <button class="btn btn-sm btn-danger" onclick="window.solicitarExclusaoColaborador('${c.id}')" title="Excluir">
                     <i class="fa fa-trash"></i>
                   </button>
                 </div>
@@ -3416,10 +3420,6 @@
         document.getElementById('btnBaixarTodosQRCodes').addEventListener('click', baixarTodosQRCodes);
         document.getElementById('btnImprimirQRCodes').addEventListener('click', imprimirQRCodes);
 
-        // Botões de relatório
-        document.getElementById('btnRelatorioChaves').addEventListener('click', gerarRelatorioChaves);
-        document.getElementById('btnRelatorioColaboradores').addEventListener('click', gerarRelatorioColaboradores);
-
         // Modais
         document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
         document.getElementById('btnConfirmarExclusao').addEventListener('click', confirmarExclusao);
@@ -3427,15 +3427,45 @@
         // Botões de pesquisa de chave
         document.getElementById('btnPesquisarDisponiveis').addEventListener('click', listarChavesDisponiveis);
         document.getElementById('btnPesquisarRetiradas').addEventListener('click', listarChavesRetiradas);
-        document.getElementById('btnReiniciarScanner').addEventListener('click', reiniciarScanner);
         
         // Input de busca por número (pressionar Enter)
-        document.getElementById('numeroChave').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            buscarChavePorNumero();
+        const numeroChaveInput = document.getElementById('numeroChave');
+        if (numeroChaveInput) {
+          numeroChaveInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              buscarChavePorNumero();
+            }
+          });
+        }
+      }
+
+      // ==============================================
+      // LISTENER DE AUTENTICAÇÃO
+      // ==============================================
+      function registrarListenerAuth() {
+        if (AppState.authListenerRegistered) return;
+
+        initFirebase();
+
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            if (!AppState.currentUser) {
+              AppState.currentUser = user;
+              carregarPerfilUsuario(user.uid).then(() => {
+                showAppContent();
+              });
+            }
+          } else {
+            if (AppState.currentUser) {
+              AppState.reset();
+              hideAppContent();
+              showLogin();
+            }
           }
         });
+
+        AppState.authListenerRegistered = true;
       }
 
       // ==============================================
@@ -3497,7 +3527,7 @@
       window.listarChavesDisponiveis = listarChavesDisponiveis;
       window.listarChavesRetiradas = listarChavesRetiradas;
       window.selecionarChave = selecionarChave;
-      window.buscarChavePorNumero = buscarChavePorNumero; // Função otimizada
+      window.buscarChavePorNumero = buscarChavePorNumero;
     })();
   </script>
 
